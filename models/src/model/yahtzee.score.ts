@@ -1,7 +1,5 @@
-import { die_values, DieValue } from './dice'
+import { die_values, DieValue, DieArray } from './dice'
 import { chance_slot, full_house_slot, large_straight_slot, number_slot, pair_slot, quads_slot, score, small_straight_slot, trips_slot, two_pair_slot as two_pairs_slot, yahtzee_slot, type Slot } from './yahtzee.slots'
-
-type DieArray<T> = { [key in DieValue]: T }
 
 export const upper_section_slots: DieArray<Slot> = {
   [1]: number_slot(1),
@@ -17,28 +15,20 @@ export type UpperSection = Readonly<{
   bonus?: 0 | 50
 }>
 
-function die_array<T>(gen:(n:number) => T): DieArray<T> {
-  return die_values.reduce((o, n) => ({...o, [n]: gen(n)}), {}) as DieArray<T>
-}
-
-function values<T>(dArr: DieArray<T>): T[] {
-  return die_values.map(v => dArr[v])
-}
-
 export function upper_section(): UpperSection {
   return { 
-    scores: die_array(_ => undefined)
+    scores: Object.fromEntries(die_values.map(v => [v, undefined])) as DieArray<undefined>
   }
 }
 
 export function sum_upper(scores: DieArray<number | undefined>): number {
-  return values(scores)
+  return Object.values(scores)
     .map(v => v ?? 0)
     .reduce((s, v) => s + v, 0)
 }
 
 export function finished_upper(section: UpperSection): boolean {
-  return values(section.scores).every(s => s !== undefined)
+  return Object.values(section.scores).every(s => s !== undefined)
 }
 
 export function register_upper(section: UpperSection, value: DieValue, roll: DieValue[]): UpperSection {

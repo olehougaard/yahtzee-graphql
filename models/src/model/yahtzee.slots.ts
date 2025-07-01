@@ -18,7 +18,6 @@ type Scored = { readonly score: (roll: Roll) => number }
 
 export type Slot = SlotType & Scored
 
-
 function count_dice(target: number, roll: Roll): number {
     return roll.filter(d => d === target).length
 }

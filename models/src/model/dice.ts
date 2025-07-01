@@ -5,6 +5,8 @@ export const die_values = [1, 2, 3, 4, 5, 6] as const
 
 export type DieValue = typeof die_values[number]
 
+export type DieArray<T> = { [key in DieValue]: T }
+
 export function isDieValue(x: any): x is DieValue {
     return die_values.indexOf(x) > -1
 }
