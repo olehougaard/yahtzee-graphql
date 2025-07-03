@@ -70,7 +70,7 @@ describe("lower section", () => {
     const section: LowerSection = new_lower_section()
     const lower_section_keys = Object.keys(lower_section_slots) as LowerSlotKey[]
     it("has undefined for all scores", () => {
-      expect(lower_section_keys.map(k => section.scores[k])).toEqual(Array.from(new Array(lower_section_keys.length), _ => undefined))
+      expect(lower_section_keys.map(k => section[k])).toEqual(Array.from(new Array(lower_section_keys.length), _ => undefined))
     })
   })
 
@@ -78,23 +78,21 @@ describe("lower section", () => {
     const section = new_lower_section()
     it("Registers the score in the appropriate slot", () => {
       const registered = register_lower(section, 'pair', [3, 1, 3, 2, 6])
-      expect(registered.scores['pair']).toEqual(6)
+      expect(registered['pair']).toEqual(6)
     })
     it("Registers the score as 0 if the roll doesn't match the slot", () => {
       const registered = register_lower(section, 'full house', [3, 1, 3, 2, 6])
-      expect(registered.scores['full house']).toEqual(0)
+      expect(registered['full house']).toEqual(0)
     })
   })
 
   describe("totalling the section", () => {
     const lower_section: LowerSection = {
-      scores: {
-        pair: 6,
-        ['two pairs']: 6,
-        ['small straight']: 15,
-        chance: 25,
-        yahtzee: 18
-      }
+      pair: 6,
+      ['two pairs']: 6,
+      ['small straight']: 15,
+      chance: 25,
+      yahtzee: 18
     }
     const scores = { upper_section: upper_section(), lower_section }
     it("adds all the defined scores", () => {

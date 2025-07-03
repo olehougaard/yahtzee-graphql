@@ -36,21 +36,18 @@ type LowerSectionKey = keyof LowerSectionSlots
 
 const lower_section_keys: Readonly<LowerSectionKey[]> = Object.keys(lower_section_slots) as LowerSectionKey[]
 
-export type LowerSection = {
-  scores: Partial<Record<LowerSectionKey, number>>
-}
+export type LowerSection = Readonly<Partial<Record<LowerSectionKey, number>>>
 
 export function lower_section(): LowerSection {
-  return { scores: { }}
+  return { }
 }
 
 export function finished_lower(section: LowerSection): boolean {
-  return lower_section_keys.every(key => section.scores[key] !== undefined)
+  return lower_section_keys.every(key => section[key] !== undefined)
 }
 
 export function register_lower(section: LowerSection, key: LowerSectionKey, roll: Roll):  LowerSection {
-  const scores = { ...section.scores, [key]: score(lower_section_slots[key], roll) }
-  return {scores}
+  return { ...section, [key]: score(lower_section_slots[key], roll) }
 }
 
 export type PlayerScores = {
@@ -77,7 +74,7 @@ export function slot_score(scores: PlayerScores, key: SlotKey): number | undefin
   if (isUpperSlotKey(key))
       return scores.upper_section[key]
   else
-    return scores.lower_section.scores[key]
+    return scores.lower_section[key]
 }
 
 export function sum(scores: PlayerScores): number | undefined {
@@ -102,7 +99,7 @@ export function total_upper(scores: PlayerScores): number {
 
 export function total_lower(scores: PlayerScores): number {
   return lower_section_keys
-    .map(k => scores.lower_section.scores[k] ?? 0)
+    .map(k => scores.lower_section[k] ?? 0)
     .reduce((a, b) => a + b , 0)
 }
 

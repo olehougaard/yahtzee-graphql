@@ -151,7 +151,7 @@ describe("register", () => {
     })
     it("disallows registering an already registered slot", () => {
       const scores = {...rerolled_twice.scores[0]}
-      const lower_section = {scores: {...scores.lower_section.scores, ['large straight']: 20}}
+      const lower_section = {...scores.lower_section, ['large straight']: 20}
       const used = {
         ...rerolled_twice,
         scores: update(0, { ...scores, lower_section }, rerolled_twice.scores)
@@ -170,7 +170,7 @@ const finished: Yahtzee = {
   scores: [
     {
       upper_section: {[1]: 3, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
-      lower_section: {scores: {
+      lower_section: {
         'pair': 12,
         'two pairs': 20,
         'three of a kind': 15,
@@ -180,13 +180,13 @@ const finished: Yahtzee = {
         'full house': 0,
         'chance': 22,
         'yahtzee': 0
-      }}
+      }
     },
     {
       upper_section: {
         [1]: 2, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18
       },
-      lower_section: {scores: {
+      lower_section: {
         'pair': 10,
         'two pairs': 18,
         'three of a kind': 18,
@@ -196,7 +196,7 @@ const finished: Yahtzee = {
         'full house': 26,
         'chance': 24,
         'yahtzee': 50
-      }}
+      }
     }
   ],
   playerInTurn: 0,
@@ -207,7 +207,7 @@ const finished: Yahtzee = {
 
 const {roller, ...cloneable } = finished
 const almost_finished = {...structuredClone(cloneable), roller}
-almost_finished.scores[0].lower_section.scores['yahtzee'] = undefined
+almost_finished.scores[0].lower_section = {...almost_finished.scores[0].lower_section, yahtzee: undefined}
 almost_finished.scores[1].upper_section = {...almost_finished.scores[1].upper_section, [1]: undefined}
 
 describe("scores", () => {
