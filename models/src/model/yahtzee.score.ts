@@ -1,60 +1,30 @@
-import { die_values, DieValue, DieArray } from './dice'
-import { lower_section_slots, SlotKey, isUpperSlotKey, number_slot, score, Slot, Roll } from './yahtzee.slots'
-
-export const upper_section_slots: DieArray<Slot> = {
-  [1]: number_slot(1),
-  [2]: number_slot(2),
-  [3]: number_slot(3),
-  [4]: number_slot(4),
-  [5]: number_slot(5),
-  [6]: number_slot(6),
-} as const
+import { die_values, DieArray } from './dice'
+import { lower_section_slots, upper_section_slots, score, Roll, SlotKey } from './yahtzee.slots'
 
 export const slots = { ...lower_section_slots, ...upper_section_slots }
 
 export type UpperSection = Readonly<DieArray<number | undefined>>
 
-export function upper_section(): UpperSection {
-  return Object.fromEntries(die_values.map(v => [v, undefined])) as DieArray<undefined>
-}
-
-function sum_upper(scores: DieArray<number | undefined>): number {
-  return die_values
-    .map(key => scores[key] ?? 0)
-    .reduce((s, v) => s + v, 0)
-}
-
-export function finished_upper(section: UpperSection): boolean {
-  return Object.values(section).every(s => s !== undefined)
-}
-
-export function register_upper(section: UpperSection, value: DieValue, roll: Roll): UpperSection {
-  return { ...section, [value]: score(upper_section_slots[value], roll) }
-}
-
 type LowerSectionSlots = typeof lower_section_slots
 
 type LowerSectionKey = keyof LowerSectionSlots
+
+export type LowerSection = Readonly<Partial<Record<LowerSectionKey, number>>>
+
+export type PlayerScores = UpperSection & LowerSection
 
 const lower_section_keys: Readonly<LowerSectionKey[]> = Object.keys(lower_section_slots) as LowerSectionKey[]
 
 const slot_keys: Readonly<LowerSectionKey[]> = Object.keys(slots) as LowerSectionKey[]
 
-export type LowerSection = Readonly<Partial<Record<LowerSectionKey, number>>>
+function upper_section(): UpperSection {
+  return Object.fromEntries(die_values.map(v => [v, undefined])) as DieArray<undefined>
+}
 
 export function lower_section(): LowerSection {
   return { }
 }
 
-export function finished_lower(section: LowerSection): boolean {
-  return lower_section_keys.every(key => section[key] !== undefined)
-}
-
-export function register_lower(section: LowerSection, key: LowerSectionKey, roll: Roll):  LowerSection {
-  return { ...section, [key]: score(lower_section_slots[key], roll) }
-}
-
-export type PlayerScores = UpperSection & LowerSection
 
 export function new_scores(): PlayerScores {
   return { ...upper_section(), ...lower_section() }
@@ -68,8 +38,10 @@ export function slot_score(scores: PlayerScores, key: SlotKey): number | undefin
   return scores[key]
 }
 
-export function sum(scores: PlayerScores): number {
-  return sum_upper(scores)
+export function sum(scores: DieArray<number | undefined>): number {
+  return die_values
+    .map(key => scores[key] ?? 0)
+    .reduce((s, v) => s + v, 0)
 }
 
 export function bonus(scores: PlayerScores): number | undefined {
@@ -90,7 +62,7 @@ export function total_upper(scores: PlayerScores): number {
 
 export function total_lower(scores: PlayerScores): number {
   return lower_section_keys
-    .map(key => scores[key] ?? 0)
+  .map(key => scores[key] ?? 0)
     .reduce((s, v) => s + v , 0)
 }
 
