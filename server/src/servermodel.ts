@@ -14,54 +14,38 @@ const game0: IndexedGame = {
   rolls_left: 2,
   scores:[
     {
-      upper_section: {
-        scores: {
-          [1]: 3,
-          [2]: undefined,
-          [3]: undefined,
-          [4]: 12,
-          [5]: 15,
-          [6]: 18
-        }
-      },
-      lower_section: {
-        scores: {
-          'pair': 12,
-          'two pairs': 22,
-          'three of a kind': 15,
-          'four of a kind': 16,
-          'full house': 27,
-          'small straight': 0,
-          'large straight': 20,
-          'chance': 26,
-          'yahtzee': 0
-        }
-      }
+      [1]: 3,
+      [2]: undefined,
+      [3]: undefined,
+      [4]: 12,
+      [5]: 15,
+      [6]: 18,
+      'pair': 12,
+      'two pairs': 22,
+      'three of a kind': 15,
+      'four of a kind': 16,
+      'full house': 27,
+      'small straight': 0,
+      'large straight': 20,
+      'chance': 26,
+      'yahtzee': 0
     },
     {
-      upper_section:{
-        scores: {
-          [1]: 3,
-          [2]: undefined,
-          [3]: 12,
-          [4]: 12,
-          [5]: 20,
-          [6]: 18
-        }
-      },
-      lower_section: {
-      scores: {
-        'pair': 10,
-        'two pairs': 14,
-        'three of a kind': 12,
-        'four of a kind': 8,
-        'full house': 18,
-        'small straight': 0,
-        'large straight': 0,
-        'chance': 22,
-        'yahtzee': undefined
-      }
-    }
+      [1]: 3,
+      [2]: undefined,
+      [3]: 12,
+      [4]: 12,
+      [5]: 20,
+      [6]: 18,
+      'pair': 10,
+      'two pairs': 14,
+      'three of a kind': 12,
+      'four of a kind': 8,
+      'full house': 18,
+      'small straight': 0,
+      'large straight': 0,
+      'chance': 22,
+      'yahtzee': undefined
     }
   ],
   pending: false,

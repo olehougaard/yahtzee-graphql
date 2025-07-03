@@ -31,6 +31,9 @@ describe("new game", () => {
   it("starts with having two rerolls remaining", () => {
     expect(yahtzee.rolls_left).toEqual(2)
   })
+  it("is unfinished", () => {
+    expect(is_finished(yahtzee)).toBeFalsy()
+  })
 })
 
 describe("reroll", () => {
@@ -105,11 +108,10 @@ describe("register", () => {
       expect(registered.rolls_left).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled_twice.scores[0]}
-      const upper_section = {...scores.upper_section, [2]: 8}
+      const scores = {...rerolled_twice.scores[0], [2]: 8}
       const used = {
         ...rerolled_twice,
-        scores: update(0, { ...scores, upper_section }, rerolled_twice.scores)
+        scores: update(0, scores, rerolled_twice.scores)
       }
       expect(() => register(2, used)).toThrow()
     })
@@ -150,11 +152,10 @@ describe("register", () => {
       expect(registered.rolls_left).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled_twice.scores[0]}
-      const lower_section = {...scores.lower_section, ['large straight']: 20}
+      const scores = {...rerolled_twice.scores[0], ['large straight']: 20}
       const used = {
         ...rerolled_twice,
-        scores: update(0, { ...scores, lower_section }, rerolled_twice.scores)
+        scores: update(0, scores, rerolled_twice.scores)
       }
       expect(() => register('large straight', used)).toThrow()
     })
@@ -169,33 +170,38 @@ const almost_finished: Yahtzee = {
   players: ['B', 'A'],
   scores: [
     {
-      upper_section: {[1]: 3, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
-      lower_section: {
-        'pair': 12,
-        'two pairs': 20,
-        'three of a kind': 15,
-        'four of a kind': 0,
-        'small straight': 15,
-        'large straight': 0,
-        'full house': 0,
-        'chance': 22
-      }
+      [1]: 3, 
+      [2]: 6, 
+      [3]: 9, 
+      [4]: 12, 
+      [5]: 15, 
+      [6]: 18,
+      'pair': 12,
+      'two pairs': 20,
+      'three of a kind': 15,
+      'four of a kind': 0,
+      'small straight': 15,
+      'large straight': 0,
+      'full house': 0,
+      'chance': 22,
+      'yahtzee': undefined
     },
     {
-      upper_section: {
-        [1]: undefined, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18
-      },
-      lower_section: {
-        'pair': 10,
-        'two pairs': 18,
-        'three of a kind': 18,
-        'four of a kind': 16,
-        'small straight': 0,
-        'large straight': 0,
-        'full house': 26,
-        'chance': 24,
-        'yahtzee': 50
-      }
+      [1]: undefined, 
+      [2]: 6, 
+      [3]: 9, 
+      [4]: 12, 
+      [5]: 15, 
+      [6]: 18,
+      'pair': 10,
+      'two pairs': 18,
+      'three of a kind': 18,
+      'four of a kind': 16,
+      'small straight': 0,
+      'large straight': 0,
+      'full house': 26,
+      'chance': 24,
+      'yahtzee': 50
     }
   ],
   playerInTurn: 0,
@@ -234,5 +240,15 @@ describe("is_finished", () => {
   })
   it("returns true if the game is finished", () => {
     expect(is_finished(finished)).toBeTruthy()
+  })
+})
+
+describe("serialization", () => {
+  describe("new game", () => {
+    const new_game = new_yahtzee({players: ['A', 'B']})
+    const transferred_game = JSON.parse(JSON.stringify(new_game))
+    it("is still unfinished when transferred", () => {
+      expect(is_finished(transferred_game)).toBeFalsy()
+    })
   })
 })
