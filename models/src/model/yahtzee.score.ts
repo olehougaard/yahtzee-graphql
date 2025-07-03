@@ -12,7 +12,6 @@ export const upper_section_slots: DieArray<Slot> = {
 
 export type UpperSection = Readonly<{
   scores: DieArray<number | undefined>,
-  bonus?: 0 | 50
 }>
 
 export function upper_section(): UpperSection {
@@ -33,10 +32,6 @@ export function finished_upper(section: UpperSection): boolean {
 
 export function register_upper(section: UpperSection, value: DieValue, roll: Roll): UpperSection {
   const scores = { ...section.scores, [value]: score(upper_section_slots[value], roll) }
-  if (finished_upper({scores})) {
-    const sum = sum_upper(scores)
-    return { ...section, scores, bonus: sum >= 63? 50 : 0}
-  }
   return { ...section, scores}
 }
 
