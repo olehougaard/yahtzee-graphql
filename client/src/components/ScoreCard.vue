@@ -28,12 +28,10 @@
   const potentialScore = (key: SlotKey) => score(slots[key], game.roll)
 
   const displayScore = (score: number | undefined): string => {
-    if (score === undefined)
-      return ''
-    else if (score === 0)
+    if (score === 0)
       return '---'
     else
-      return score.toString()
+      return score?.toString() ?? ''
   }
 
   const activeClass = (p: string) => p === player? 'activeplayer' : undefined
