@@ -165,7 +165,7 @@ describe("register", () => {
   })
 })
 
-const finished: Yahtzee = {
+const almost_finished: Yahtzee = {
   players: ['B', 'A'],
   scores: [
     {
@@ -178,13 +178,12 @@ const finished: Yahtzee = {
         'small straight': 15,
         'large straight': 0,
         'full house': 0,
-        'chance': 22,
-        'yahtzee': 0
+        'chance': 22
       }
     },
     {
       upper_section: {
-        [1]: 2, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18
+        [1]: undefined, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18
       },
       lower_section: {
         'pair': 10,
@@ -200,15 +199,15 @@ const finished: Yahtzee = {
     }
   ],
   playerInTurn: 0,
-  roll: [],
+  roll: [2, 1, 1, 1, 1], // Player 0 roll
   rolls_left: 2,
-  roller: dice_roller(() => 0)
+  roller: dice_roller(non_random(
+    0, 0, 2, 3, 4, // Player 1 roll
+  ))
 }
 
-const {roller, ...cloneable } = finished
-const almost_finished = {...structuredClone(cloneable), roller}
-almost_finished.scores[0].lower_section = {...almost_finished.scores[0].lower_section, yahtzee: undefined}
-almost_finished.scores[1].upper_section = {...almost_finished.scores[1].upper_section, [1]: undefined}
+const player_0_scratch = register('yahtzee', almost_finished)
+const finished = register(1, player_0_scratch)
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {
