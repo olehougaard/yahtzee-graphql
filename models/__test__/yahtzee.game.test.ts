@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 import { is_finished, new_yahtzee, register, reroll, scores, Yahtzee } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
 import { total } from '../src/model/yahtzee.score'
@@ -106,7 +106,7 @@ describe("register", () => {
     })
     it("disallows registering an already registered slot", () => {
       const scores = {...rerolled_twice.scores[0]}
-      const upper_section = {scores: {...scores.upper_section.scores, [2]: 8}}
+      const upper_section = {...scores.upper_section, [2]: 8}
       const used = {
         ...rerolled_twice,
         scores: update(0, { ...scores, upper_section }, rerolled_twice.scores)
@@ -169,10 +169,7 @@ const finished: Yahtzee = {
   players: ['B', 'A'],
   scores: [
     {
-      upper_section: {
-        scores: {[1]: 3, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
-        bonus: 50
-      },
+      upper_section: {[1]: 3, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
       lower_section: {scores: {
         'pair': 12,
         'two pairs': 20,
@@ -187,8 +184,7 @@ const finished: Yahtzee = {
     },
     {
       upper_section: {
-        scores: {[1]: 2, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
-        bonus: 0
+        [1]: 2, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18
       },
       lower_section: {scores: {
         'pair': 10,
@@ -212,7 +208,7 @@ const finished: Yahtzee = {
 const {roller, ...cloneable } = finished
 const almost_finished = {...structuredClone(cloneable), roller}
 almost_finished.scores[0].lower_section.scores['yahtzee'] = undefined
-almost_finished.scores[1].upper_section.scores[1] = undefined
+almost_finished.scores[1].upper_section = {...almost_finished.scores[1].upper_section, [1]: undefined}
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {

@@ -5,7 +5,7 @@ import { lower_section_slots, LowerSlotKey } from '../src/model/yahtzee.slots'
 import { repeat } from '../src/utils/array_utils'
 
 function from_upper(scores: DieArray<number | undefined>): PlayerScores {
-  const upper_section = { scores }
+  const upper_section = scores
   const lower_section = new_lower_section()
   return { upper_section, lower_section }
 }
@@ -15,7 +15,7 @@ describe("Upper section", () => {
     const section = upper_section()
 
     it("has undefined for all scores", () => {
-      expect(die_values.map(d => section.scores[d])).toEqual(repeat(undefined, 6))
+      expect(die_values.map(d => section[d])).toEqual(repeat(undefined, 6))
     })
   })
 
@@ -23,7 +23,7 @@ describe("Upper section", () => {
     const section = upper_section()
     const registered = register_upper(section, 3, [3, 1, 3, 2, 6])
     it("Registers the score in the appropriate slot", () => {
-      expect(registered.scores[3]).toEqual(6)
+      expect(registered[3]).toEqual(6)
     })
   })
 

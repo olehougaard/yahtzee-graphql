@@ -10,14 +10,10 @@ export const upper_section_slots: DieArray<Slot> = {
   [6]: number_slot(6),
 } as const
 
-export type UpperSection = Readonly<{
-  scores: DieArray<number | undefined>,
-}>
+export type UpperSection = Readonly<DieArray<number | undefined>>
 
 export function upper_section(): UpperSection {
-  return { 
-    scores: Object.fromEntries(die_values.map(v => [v, undefined])) as DieArray<undefined>
-  }
+  return Object.fromEntries(die_values.map(v => [v, undefined])) as DieArray<undefined>
 }
 
 function sum_upper(scores: DieArray<number | undefined>): number {
@@ -27,12 +23,11 @@ function sum_upper(scores: DieArray<number | undefined>): number {
 }
 
 export function finished_upper(section: UpperSection): boolean {
-  return Object.values(section.scores).every(s => s !== undefined)
+  return Object.values(section).every(s => s !== undefined)
 }
 
 export function register_upper(section: UpperSection, value: DieValue, roll: Roll): UpperSection {
-  const scores = { ...section.scores, [value]: score(upper_section_slots[value], roll) }
-  return { ...section, scores}
+  return { ...section, [value]: score(upper_section_slots[value], roll) }
 }
 
 type LowerSectionSlots = typeof lower_section_slots
@@ -80,13 +75,13 @@ export function register(scores: PlayerScores, key: SlotKey, roll: Roll): Player
 
 export function slot_score(scores: PlayerScores, key: SlotKey): number | undefined {
   if (isUpperSlotKey(key))
-      return scores.upper_section.scores[key]
+      return scores.upper_section[key]
   else
     return scores.lower_section.scores[key]
 }
 
 export function sum(scores: PlayerScores): number | undefined {
-  return sum_upper(scores.upper_section.scores)
+  return sum_upper(scores.upper_section)
 }
 
 export function bonus(scores: PlayerScores): number | undefined {
