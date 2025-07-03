@@ -1,5 +1,7 @@
 import { die_values, DieValue } from "./dice"
 
+type Scored = { readonly score: (roll: Roll) => number }
+
 type NumberSlot = {
     readonly type: 'number',
     readonly target: DieValue
@@ -13,8 +15,6 @@ type OfAKindSlot = {
 type SlotType = NumberSlot | OfAKindSlot | { readonly type: 'yahtzee' | 'two pair' | 'full house' | 'small straight' | 'large straight'| 'chance' }
 
 export type Roll = DieValue[]
-
-type Scored = { readonly score: (roll: Roll) => number }
 
 export type Slot = SlotType & Scored
 
@@ -41,7 +41,7 @@ function straight(from: DieValue, score: number, roll: Roll) {
   return roll.toSorted().every((d, i) => d === i + from)? score : 0
 }
 
-export function number_slot(target: DieValue): Slot {
+export function number_slot(target: DieValue): NumberSlot & Scored {
     return {
         type: 'number',
         target,
@@ -60,7 +60,7 @@ const of_a_kind_slot = (count: number): Slot => ({
 })
 
 export const pair_slot: Slot = of_a_kind_slot(2)
-export const two_pair_slot: Slot = { type: 'two pair', score: two_kinds.bind(null, 2, 2) }
+export const two_pairs_slot: Slot = { type: 'two pair', score: two_kinds.bind(null, 2, 2) }
 export const trips_slot: Slot = of_a_kind_slot(3)
 export const quads_slot: Slot = of_a_kind_slot(4)
 export const full_house_slot: Slot = { type: 'full house', score: two_kinds.bind(null, 3, 2) }
@@ -72,3 +72,34 @@ export const yahtzee_slot: Slot = { type: 'yahtzee', score: roll => of_a_kind(5,
 export function score(slot: Slot, roll: Roll): number {
   return slot.score(roll)
 }
+
+const die_value_slots = die_values.map(v => [v, number_slot(v)] as [DieValue, NumberSlot & Scored])
+
+export const upper_section_slots = Object.fromEntries(die_value_slots) as Record<DieValue, NumberSlot & Scored>
+
+export const lower_section_slots = {
+  'pair': pair_slot,
+  'two pairs': two_pairs_slot,
+  'three of a kind': trips_slot,
+  'four of a kind': quads_slot,
+  'full house': full_house_slot,
+  'small straight': small_straight_slot,
+  'large straight': large_straight_slot,
+  'chance': chance_slot,
+  'yahtzee': yahtzee_slot
+} as const
+
+
+export const slots = { ...upper_section_slots, ...lower_section_slots } as const
+
+export type UpperSlotKey = keyof typeof upper_section_slots
+
+export type LowerSlotKey = keyof typeof lower_section_slots
+
+export type SlotKey = keyof typeof slots
+
+export function isUpperSlotKey(key: SlotKey): key is UpperSlotKey {
+  return die_values.indexOf(key as any) !== -1
+}
+
+export const lower_section_keys = Object.keys(lower_section_slots) as LowerSlotKey[]

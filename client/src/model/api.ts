@@ -1,11 +1,11 @@
-import type { DieValue } from "models/src/model/dice";
 import type { IndexedYahtzee, IndexedYahtzeeSpecs } from "./game";
-import type { LowerSectionKey } from "models/src/model/yahtzee.score";
+import type { SlotKey } from "models/src/model/yahtzee.slots";
 
 const headers = {Accept: 'application/json', 'Content-Type': 'application/json'}
 
 async function post(url: string, body: {} = {}): Promise<any> {
   const response: Response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body)})
+  if (!response.ok) return Promise.reject(response)
   return await response.json()
 }
 
@@ -35,6 +35,6 @@ export async function reroll(game: IndexedYahtzee, held: number[], player: strin
   return perform_action(game, { type: 'reroll', held, player })
 }
 
-export async function register(game: IndexedYahtzee, slot: DieValue | LowerSectionKey, player: string) {
+export async function register(game: IndexedYahtzee, slot: SlotKey, player: string) {
   return perform_action(game, { type: 'register', slot, player })
 }

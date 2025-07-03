@@ -1,19 +1,18 @@
 <script setup lang="ts">
   import * as api from '../model/api'
-  import { lower_section_keys, lower_section_slots, sum_upper, total_upper, upper_section_slots, type LowerSectionKey } from 'models/src/model/yahtzee.score';
-  import {die_values, isDieValue, type DieValue} from 'models/src/model/dice';
-  import {scores} from 'models/src/model/yahtzee.game';
-  import {computed} from 'vue';
+  import { sum, bonus, total_upper, slot_score } from 'models/src/model/yahtzee.score';
+  import { die_values } from 'models/src/model/dice';
+  import { scores as game_scores } from 'models/src/model/yahtzee.game';
+  import { computed } from 'vue';
   import type { IndexedYahtzee } from '@/model/game'
-  import { score } from 'models/src/model/yahtzee.slots';
+  import { score, slots, type SlotKey, lower_section_keys } from 'models/src/model/yahtzee.slots';
 
   const { game, player, enabled } = defineProps<{game: IndexedYahtzee, player: string, enabled: boolean}>()
 
   const players = computed(() => game.players)
-  const upper_sections = computed(() => game.upper_sections)
-  const lower_sections = computed(() => game.lower_sections)
+  const scores = computed(() => game.scores)
 
-  const register = (key: DieValue | LowerSectionKey) => {
+  const register = (key: SlotKey) => {
     if (enabled)
       api.register(game, key, player)
   }
@@ -22,21 +21,11 @@
     return game.players[game.playerInTurn] === player && player === p
   }
 
-  const playerScores = (key: DieValue | LowerSectionKey): { player: string; score: number | undefined }[] => {
-    if (isDieValue(key)) {
-      return players.value.map((p, i) => ({player: p, score: upper_sections.value[i].scores[key]}))
-    } else {
-      return players.value.map((p, i) => ({player: p, score: lower_sections.value[i].scores[key]}))
-    }
+  const playerScores = (key: SlotKey): { player: string; score: number | undefined }[] => {
+    return players.value.map((player, i) => ({player, score: slot_score(scores.value[i], key)}))
   }
 
-  const potentialScore = (key: DieValue | LowerSectionKey) => {
-    if (isDieValue(key)) {
-      return score(upper_section_slots[key], game.roll)
-    } else {
-      return score(lower_section_slots[key], game.roll)
-    }
-  }
+  const potentialScore = (key: SlotKey) => score(slots[key], game.roll)
 
   const displayScore = (score: number | undefined): string => {
     if (score === undefined)
@@ -68,17 +57,17 @@
           <tr>
             <td>Sum</td>
             <td>63</td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{sum_upper(upper_sections[index].scores)}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{sum(scores[index])}}</td>
           </tr>
           <tr>
             <td>Bonus</td>
             <td>50</td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{displayScore(upper_sections[index].bonus)}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{bonus(scores[index])}}</td>
           </tr>
           <tr>
             <td>Total</td>
             <td></td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{total_upper(upper_sections[index])}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{total_upper(scores[index])}}</td>
           </tr>
           <tr class="section_header"><td :colspan='players.length + 2'>Lower Section</td></tr>
           <tr v-for="key in lower_section_keys">
@@ -93,7 +82,7 @@
           <tr>
             <td>Total</td>
             <td></td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{scores(game)[index]}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{game_scores(game)[index]}}</td>
           </tr>
         </tbody>
       </table>

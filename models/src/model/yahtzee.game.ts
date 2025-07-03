@@ -1,7 +1,8 @@
-import { repeat, update, zipWith } from "../utils/array_utils"
+import { repeat, update } from "../utils/array_utils"
 import { Randomizer, standardRandomizer, standardShuffler } from "../utils/random_utils"
-import { dice_roller, DiceRoller, die_values, DieValue } from "./dice"
-import { finished_lower, finished_upper, isLowerSection, lower_section, LowerSection, LowerSectionKey, register_lower, register_upper, total_lower, total_upper, upper_section, UpperSection } from "./yahtzee.score"
+import { dice_roller, DiceRoller, DieValue } from "./dice"
+import { register as register_player, is_finished as is_finished_player, registered, total, new_scores, PlayerScores } from "./yahtzee.score"
+import { SlotKey } from "./yahtzee.slots"
 
 export type YahtzeeSpecs = {
   creator?: string,
@@ -15,8 +16,7 @@ export type YahtzeeOptions = YahtzeeSpecs & {
 
 export type Yahtzee = Readonly<{
   players: string[],
-  upper_sections: UpperSection[],
-  lower_sections: LowerSection[],
+  scores: PlayerScores[],
   playerInTurn: number,
   roll: DieValue[],
   rolls_left: number,
@@ -29,8 +29,7 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
   const roller = dice_roller(randomizer)
   return {
     players: standardShuffler(randomizer, players),
-    upper_sections: repeat(upper_section(), players.length),
-    lower_sections: repeat(lower_section(), players.length),
+    scores: repeat(new_scores(), players.length),
     playerInTurn: 0,
     roll: roller.roll(5),
     rolls_left: 2,
@@ -47,38 +46,22 @@ export function reroll(held: number[], yahtzee: Yahtzee): Yahtzee {
   }
 }
 
-export function register(slot: DieValue | LowerSectionKey, yahtzee: Yahtzee): Yahtzee {
-  if (isLowerSection(slot)) {
-    const { playerInTurn, lower_sections, roll } = yahtzee
-    const section = lower_sections[playerInTurn]
-    if (section.scores[slot]) throw new Error("Cannot overwrite score")
+export function register(slot: SlotKey, yahtzee: Yahtzee): Yahtzee {
+    const { playerInTurn, scores, roll } = yahtzee
+    if (registered(scores[playerInTurn], slot)) throw new Error("Cannot overwrite score")
     return {
       ...yahtzee,
-      lower_sections: update(playerInTurn, register_lower(section, slot, roll), lower_sections),
+      scores: update(playerInTurn, register_player(scores[playerInTurn], slot, roll), scores),
       playerInTurn: (playerInTurn + 1) % yahtzee.players.length,
       roll: yahtzee.roller.roll(5),
       rolls_left: 2
     }
-  } else {
-    const { playerInTurn, upper_sections, roll } = yahtzee
-    const section = upper_sections[playerInTurn]
-    if (section.scores[slot]) throw new Error("Cannot overwrite score")
-    return {
-      ...yahtzee,
-      upper_sections: update(playerInTurn, register_upper(section, slot, roll), upper_sections),
-      playerInTurn: (playerInTurn + 1) % yahtzee.players.length,
-      roll: yahtzee.roller.roll(5),
-      rolls_left: 2
-    }
-  }
 }
 
 export function scores(yahtzee: Omit<Yahtzee, 'roller'>): number[] {
-  const upper_scores = yahtzee.upper_sections.map(total_upper)
-  const lower_scores = yahtzee.lower_sections.map(total_lower)
-  return zipWith((u, l) => u + l, upper_scores, lower_scores)
+  return yahtzee.scores.map(total)
 }
 
 export function is_finished(yahtzee: Omit<Yahtzee, 'roller'>): boolean {
-  return yahtzee.upper_sections.every(finished_upper) && yahtzee.lower_sections.every(finished_lower)
+  return yahtzee.scores.every(is_finished_player)
 }

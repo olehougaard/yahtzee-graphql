@@ -2,8 +2,7 @@ import { WebSocket } from "ws";
 import * as Game from "models/src/model/yahtzee.game"
 import { IndexedGame, PendingGame } from "./servermodel";
 import * as G from "./servermodel"
-import { DieValue } from "models/src/model/dice";
-import { LowerSectionKey } from "models/src/model/yahtzee.score"
+import { SlotKey } from "models/src/model/yahtzee.slots"
 
 export default (ws: WebSocket) => {
   function new_game(creator: string, number_of_players: number): IndexedGame | PendingGame {
@@ -17,7 +16,7 @@ export default (ws: WebSocket) => {
     return G.update(id, game => Game.reroll(held, game))
   }
   
-  function register(id: number, slot: DieValue | LowerSectionKey, player: string) {
+  function register(id: number, slot: SlotKey, player: string) {
     const game = G.game(id)
     if (!game || player !== game.players[game.playerInTurn])
       throw new Error('Forbidden')

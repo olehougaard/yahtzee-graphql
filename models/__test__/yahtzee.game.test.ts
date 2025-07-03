@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals'
 import { is_finished, new_yahtzee, register, reroll, scores, Yahtzee } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
-import { total_lower, total_upper } from '../src/model/yahtzee.score'
+import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
 import { dice_roller } from '../src/model/dice'
 
@@ -16,17 +16,11 @@ describe("new game", () => {
   it("shuffles the order of players", () => {
     expect(yahtzee.players).toEqual(['D', 'C', 'B', 'A'])
   })
-  it("has a upper section per player", () => {
-    expect(yahtzee.upper_sections.length).toEqual(4)
+  it("has a player score per player", () => {
+    expect(yahtzee.scores.length).toEqual(4)
   })
-  it("has new upper sections", () => {
-    expect(yahtzee.upper_sections.map(total_upper)).toEqual([0, 0, 0, 0])
-  })
-  it("has a lower section per player", () => {
-    expect(yahtzee.lower_sections.length).toEqual(4)
-  })
-  it("has new lower sections", () => {
-    expect(yahtzee.lower_sections.map(total_lower)).toEqual([0, 0, 0, 0])
+  it("has new scores", () => {
+    expect(yahtzee.scores.map(total)).toEqual([0, 0, 0, 0])
   })
   it("starts with player index 0", () => {
     expect(yahtzee.playerInTurn).toEqual(0)
@@ -95,7 +89,7 @@ describe("register", () => {
     const rerolled_twice = reroll([1, 2, 3, 4], rerolled)
     const registered = register(2, rerolled_twice)
     it("registers the score", () => {
-      expect(total_upper(registered.upper_sections[0])).toEqual(2)
+      expect(total(registered.scores[0])).toEqual(2)
     })
     it("moves to the next player", () => {
       expect(registered.playerInTurn).toEqual(1)
@@ -111,16 +105,17 @@ describe("register", () => {
       expect(registered.rolls_left).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const section = rerolled_twice.upper_sections[0]
+      const scores = {...rerolled_twice.scores[0]}
+      const upper_section = {scores: {...scores.upper_section.scores, [2]: 8}}
       const used = {
         ...rerolled_twice,
-        upper_sections: update(0, {scores: {...section.scores, [2]: 8}}, rerolled_twice.upper_sections)
+        scores: update(0, { ...scores, upper_section }, rerolled_twice.scores)
       }
       expect(() => register(2, used)).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
       const registered = register(2, yahtzee)
-      expect(total_upper(registered.upper_sections[0])).toEqual(2)
+      expect(total(registered.scores[0])).toEqual(2)
     })
   })
 
@@ -139,7 +134,7 @@ describe("register", () => {
     const rerolled_twice = reroll([1, 2, 3, 4], rerolled)
     const registered = register('large straight', rerolled_twice)
     it("registers the score", () => {
-      expect(total_lower(registered.lower_sections[0])).toEqual(20)
+      expect(total(registered.scores[0])).toEqual(20)
     })
     it("moves to the next player", () => {
       expect(registered.playerInTurn).toEqual(1)
@@ -155,51 +150,59 @@ describe("register", () => {
       expect(registered.rolls_left).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const section = rerolled_twice.lower_sections[0]
+      const scores = {...rerolled_twice.scores[0]}
+      const lower_section = {scores: {...scores.lower_section.scores, ['large straight']: 20}}
       const used = {
         ...rerolled_twice,
-        lower_sections: update(0, {scores: {...section.scores, ['large straight']: 20}}, rerolled_twice.lower_sections)
+        scores: update(0, { ...scores, lower_section }, rerolled_twice.scores)
       }
       expect(() => register('large straight', used)).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
       const registered = register('small straight', yahtzee)
-      expect(total_lower(registered.lower_sections[0])).toEqual(15)
+      expect(total(registered.scores[0])).toEqual(15)
     })
   })
 })
 
 const finished: Yahtzee = {
   players: ['B', 'A'],
-  upper_sections: [{
-    scores: {[1]: 3, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
-    bonus: 50
-  }, {
-    scores: {[1]: 2, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
-    bonus: 0
-  }],
-  lower_sections: [{scores: {
-    'pair': 12,
-    'two pairs': 20,
-    'three of a kind': 15,
-    'four of a kind': 0,
-    'small straight': 15,
-    'large straight': 0,
-    'full house': 0,
-    'chance': 22,
-    'yahtzee': 0
-  }},
-  {scores: {
-    'pair': 10,
-    'two pairs': 18,
-    'three of a kind': 18,
-    'four of a kind': 16,
-    'small straight': 0,
-    'large straight': 0,
-    'full house': 26,
-    'chance': 24,
-    'yahtzee': 50
-  }}],
+  scores: [
+    {
+      upper_section: {
+        scores: {[1]: 3, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
+        bonus: 50
+      },
+      lower_section: {scores: {
+        'pair': 12,
+        'two pairs': 20,
+        'three of a kind': 15,
+        'four of a kind': 0,
+        'small straight': 15,
+        'large straight': 0,
+        'full house': 0,
+        'chance': 22,
+        'yahtzee': 0
+      }}
+    },
+    {
+      upper_section: {
+        scores: {[1]: 2, [2]: 6, [3]: 9, [4]: 12, [5]: 15, [6]: 18},
+        bonus: 0
+      },
+      lower_section: {scores: {
+        'pair': 10,
+        'two pairs': 18,
+        'three of a kind': 18,
+        'four of a kind': 16,
+        'small straight': 0,
+        'large straight': 0,
+        'full house': 26,
+        'chance': 24,
+        'yahtzee': 50
+      }}
+    }
+  ],
   playerInTurn: 0,
   roll: [],
   rolls_left: 2,
@@ -208,8 +211,8 @@ const finished: Yahtzee = {
 
 const {roller, ...cloneable } = finished
 const almost_finished = {...structuredClone(cloneable), roller}
-almost_finished.lower_sections[0].scores['yahtzee'] = undefined
-almost_finished.upper_sections[1].scores[1] = undefined
+almost_finished.scores[0].lower_section.scores['yahtzee'] = undefined
+almost_finished.scores[1].upper_section.scores[1] = undefined
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {

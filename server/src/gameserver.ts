@@ -3,15 +3,14 @@ import bodyParser from 'body-parser'
 import create_api from './api'
 import { IndexedGame, PendingGame } from './servermodel'
 import { WebSocket } from 'ws'
-import { DieValue } from 'models/src/model/dice'
-import { LowerSectionKey } from 'models/src/model/yahtzee.score'
+import { SlotKey } from 'models/src/model/yahtzee.slots'
 
 interface TypedRequest<BodyType> extends Request {
   body: BodyType
 }
 
 type RawAction = { type: 'reroll', held: number[] } 
-               | { type: 'register', slot: DieValue | LowerSectionKey }
+               | { type: 'register', slot: SlotKey }
 
 type Action = RawAction & { player: string }
 
@@ -21,7 +20,7 @@ function start_server(ws: WebSocket) {
     
   gameserver.use(function(_, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "*");
     res.header("Access-Control-Allow-Methods", "GET, POST, PATCH");
     next();
   });
@@ -65,6 +64,7 @@ function start_server(ws: WebSocket) {
       api.broadcast(g)
       res.send(g)
     } catch(e: any) {
+      console.error(e)
       if (e.message === 'Not Found')
         res.status(404).send()
       res.status(403).send()

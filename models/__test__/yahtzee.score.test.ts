@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals'
-import { lower_section, lower_section_keys, LowerSection, register_lower, register_upper, total_lower, total_upper, upper_section, UpperSection } from '../src/model/yahtzee.score'
+import { lower_section, LowerSection, PlayerScores, register, register_lower, register_upper, total_lower, total_upper, upper_section, UpperSection } from '../src/model/yahtzee.score'
 import { die_values } from '../src/model/dice'
+import { lower_section_slots, LowerSlotKey } from '../src/model/yahtzee.slots'
 import { repeat } from '../src/utils/array_utils'
 
 describe("Upper section", () => {
@@ -49,21 +50,24 @@ describe("Upper section", () => {
   })
 
   describe("totalling the section", () => {
-    const section: UpperSection = {
-      scores: {
-        [1]: undefined,
-        [2]: 6,
-        [3]: 6,
-        [4]: 16,
-        [5]: 15,
-        [6]: 18
-      }
+    const scores: PlayerScores = {
+      upper_section: {
+        scores: {
+          [1]: undefined,
+          [2]: 6,
+          [3]: 6,
+          [4]: 16,
+          [5]: 15,
+          [6]: 18
+        }
+      },
+      lower_section: lower_section()
     }
     it("adds all the defined scores", () => {
-      expect(total_upper(section)).toEqual(6 + 6 + 16 + 15 + 18)
+      expect(total_upper(scores)).toEqual(6 + 6 + 16 + 15 + 18)
     })
     it("adds the bonus if defined", () => {
-      const registered = register_upper(section, 1, [6, 2, 1, 6, 1])
+      const registered = register(scores, 1, [6, 2, 1, 6, 1])
       expect(total_upper(registered)).toEqual(2 + 6 + 6 + 16 + 15 + 18 + 50)
     })
   })
@@ -72,6 +76,7 @@ describe("Upper section", () => {
 describe("lower section", () => {
   describe("new", () => {
     const section: LowerSection = lower_section()
+    const lower_section_keys = Object.keys(lower_section_slots) as LowerSlotKey[]
     it("has undefined for all scores", () => {
       expect(lower_section_keys.map(k => section.scores[k])).toEqual(Array.from(new Array(lower_section_keys.length), _ => undefined))
     })
@@ -90,7 +95,7 @@ describe("lower section", () => {
   })
 
   describe("totalling the section", () => {
-    const section: LowerSection = {
+    const lower_section: LowerSection = {
       scores: {
         pair: 6,
         ['two pairs']: 6,
@@ -99,8 +104,9 @@ describe("lower section", () => {
         yahtzee: 18
       }
     }
+    const scores = { upper_section: upper_section(), lower_section }
     it("adds all the defined scores", () => {
-      expect(total_lower(section)).toEqual(6 + 6 + 15 + 25 + 18)
+      expect(total_lower(scores)).toEqual(6 + 6 + 15 + 25 + 18)
     })
   })
 })

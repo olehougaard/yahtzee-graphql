@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals'
-import { chance_slot, full_house_slot, large_straight_slot, number_slot, pair_slot, quads_slot, score, small_straight_slot, trips_slot, two_pair_slot, yahtzee_slot } from '../src/model/yahtzee.slots'
+import { chance_slot, full_house_slot, large_straight_slot, number_slot, pair_slot, quads_slot, score, small_straight_slot, trips_slot, two_pairs_slot, yahtzee_slot } from '../src/model/yahtzee.slots'
 
 describe("number slots", () => {
     const slot = number_slot(5)
@@ -31,16 +31,16 @@ describe("pair slot", () => {
 
 describe("two pair slot", () => {
     it("scores a pair as 0", () => {
-        expect(score(two_pair_slot, [1, 2, 4, 4, 6])).toEqual(0)
+        expect(score(two_pairs_slot, [1, 2, 4, 4, 6])).toEqual(0)
     })
     it("scores two pairs as the sum of die", () => {
-        expect(score(two_pair_slot, [1, 1, 4, 4, 6])).toEqual(10)
+        expect(score(two_pairs_slot, [1, 1, 4, 4, 6])).toEqual(10)
     })
     it("scores four-of-a-kind as 0", () => {
-        expect(score(two_pair_slot, [1, 4, 4, 4, 4])).toEqual(0)
+        expect(score(two_pairs_slot, [1, 4, 4, 4, 4])).toEqual(0)
     })
     it("scores non-pairs as 0", () => {
-        expect(score(two_pair_slot, [1, 2, 3, 4, 6])).toEqual(0)
+        expect(score(two_pairs_slot, [1, 2, 3, 4, 6])).toEqual(0)
     })
 })
 

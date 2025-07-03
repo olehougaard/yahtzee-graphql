@@ -12,43 +12,44 @@ const game0: IndexedGame = {
   playerInTurn: 0,
   roll: [1, 2, 3, 2, 4],
   rolls_left: 2,
-  upper_sections: [
+  scores:[
     {
-      scores: {
-        [1]: 3,
-        [2]: undefined,
-        [3]: undefined,
-        [4]: 12,
-        [5]: 15,
-        [6]: 18
+      upper_section: {
+        scores: {
+          [1]: 3,
+          [2]: undefined,
+          [3]: undefined,
+          [4]: 12,
+          [5]: 15,
+          [6]: 18
+        }
+      },
+      lower_section: {
+        scores: {
+          'pair': 12,
+          'two pairs': 22,
+          'three of a kind': 15,
+          'four of a kind': 16,
+          'full house': 27,
+          'small straight': 0,
+          'large straight': 20,
+          'chance': 26,
+          'yahtzee': 0
+        }
       }
     },
     {
-      scores: {
-        [1]: 3,
-        [2]: undefined,
-        [3]: 12,
-        [4]: 12,
-        [5]: 20,
-        [6]: 18
-      }
-    }
-  ],
-  lower_sections: [
-    {
-      scores: {
-        'pair': 12,
-        'two pairs': 22,
-        'three of a kind': 15,
-        'four of a kind': 16,
-        'full house': 27,
-        'small straight': 0,
-        'large straight': 20,
-        'chance': 26,
-        'yahtzee': 0
-      }
-    },
-    {
+      upper_section:{
+        scores: {
+          [1]: 3,
+          [2]: undefined,
+          [3]: 12,
+          [4]: 12,
+          [5]: 20,
+          [6]: 18
+        }
+      },
+      lower_section: {
       scores: {
         'pair': 10,
         'two pairs': 14,
@@ -60,6 +61,7 @@ const game0: IndexedGame = {
         'chance': 22,
         'yahtzee': undefined
       }
+    }
     }
   ],
   pending: false,
