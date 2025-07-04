@@ -65,17 +65,11 @@ export default (broadcaster: Broadcaster) => {
   }
   
   function reroll(id: number, held: number[], player: string) {
-    const game = server.game(id)
-    if (!game || player !== game.players[game.playerInTurn])
-      throw new Error('Forbidden')
-    return server.update(id, game => Game.reroll(held, game))
+    return server.reroll(id, held, player)
   }
   
   function register(id: number, slot: SlotKey, player: string) {
-    const game = server.game(id)
-    if (!game || player !== game.players[game.playerInTurn])
-      throw new Error('Forbidden')
-    return server.update(id, game => Game.register(slot, game))
+    return server.register(id, slot, player)
   }
 
   function games(): Readonly<IndexedGame[]> {

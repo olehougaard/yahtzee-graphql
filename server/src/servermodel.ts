@@ -1,4 +1,6 @@
 import { new_yahtzee, Yahtzee, YahtzeeSpecs } from "models/src/model/yahtzee.game";
+import * as Game from "models/src/model/yahtzee.game";
+import { SlotKey } from "models/src/model/yahtzee.slots";
 import { Randomizer } from "models/src/utils/random_utils";
 
 export type IndexedGame = Yahtzee & { readonly id: number, readonly pending: false }
@@ -63,9 +65,22 @@ export class ServerModel {
     }
   }
 
-  update(id: number, updater: (g: Yahtzee) => Yahtzee) {
+  reroll(id: number, held: number[], player: string) {
+    const game = this.game(id)
+    if (!game || player !== game.players[game.playerInTurn])
+      throw new Error('Forbidden')
+    return this.update(id, game => Game.reroll(held, game))
+  }
+  
+  register(id: number, slot: SlotKey, player: string) {
+    const game = this.game(id)
+    if (!game || player !== game.players[game.playerInTurn])
+      throw new Error('Forbidden')
+    return this.update(id, game => Game.register(slot, game))
+  }
+
+  private update(id: number, updater: (g: Yahtzee) => Yahtzee) {
     const game = this.store.game(id)
     return this.store.update({ ...updater(game), id, pending: game.pending })
   }
 }
-
