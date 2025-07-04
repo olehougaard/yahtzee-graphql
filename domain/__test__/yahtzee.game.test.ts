@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals'
-import { is_finished, new_yahtzee, register, reroll, scores, Yahtzee } from '../src/model/yahtzee.game'
+import { from_memento, is_finished, new_yahtzee, register, reroll, scores, Yahtzee, YahtzeeMemento } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
 import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
@@ -26,10 +26,10 @@ describe("new game", () => {
     expect(yahtzee.playerInTurn).toEqual(0)
   })
   it("starts with die already rolled", () => {
-    expect(yahtzee.roll).toEqual([3, 5, 4, 2, 1])
+    expect(yahtzee._roll).toEqual([3, 5, 4, 2, 1])
   })
   it("starts with having two rerolls remaining", () => {
-    expect(yahtzee.rolls_left).toEqual(2)
+    expect(yahtzee._rolls_left).toEqual(2)
   })
   it("is unfinished", () => {
     expect(is_finished(yahtzee)).toBeFalsy()
@@ -45,34 +45,16 @@ describe("reroll", () => {
       1, 5, //first re-roll
     ) 
   })
+  yahtzee.reroll([1, 2, 3])
   it("replaces the non-held dice", () => {
-    expect(reroll([1, 2, 3], yahtzee).roll).toEqual([2, 5, 4, 2, 6])
+    expect(yahtzee.roll()).toEqual([2, 5, 4, 2, 6])
   })
   it("decrements the remaining rerolls", () => {
-    expect(reroll([1, 2, 3], yahtzee).rolls_left).toEqual(1)
+    expect(yahtzee.rolls_left()).toEqual(1)
   })
   it("disallows re-rolling if no rolls are left", () => {
-    expect(() => reroll([1, 2, 3], {...yahtzee, rolls_left: 0})).toThrow()
-  })
-})
-
-describe("reroll", () => {
-  const yahtzee = new_yahtzee({
-    players: ['A', 'B', 'C', 'D'], 
-    randomizer: non_random(
-      3, 1, 0, // Reversing in Fisher-Yates
-      2, 4, 3, 1, 0, // First roll - one is added to these
-      1, 5, //first re-roll
-    ) 
-  })
-  it("replaces the non-held dice", () => {
-    expect(reroll([1, 2, 3], yahtzee).roll).toEqual([2, 5, 4, 2, 6])
-  })
-  it("decrements the remaining rerolls", () => {
-    expect(reroll([1, 2, 3], yahtzee).rolls_left).toEqual(1)
-  })
-  it("disallows re-rolling if no rolls are left", () => {
-    expect(() => reroll([1, 2, 3], {...yahtzee, rolls_left: 0})).toThrow()
+    yahtzee.reroll([])
+    expect(() => yahtzee.reroll([1, 2, 3])).toThrow()
   })
 })
 
@@ -88,9 +70,10 @@ describe("register", () => {
         5, 4, 3, 2, 1, // new re-roll
       ) 
     })
-    const rerolled = reroll([1, 2, 3], yahtzee)
-    const rerolled_twice = reroll([1, 2, 3, 4], rerolled)
-    const registered = register(2, rerolled_twice)
+    const rerolled = yahtzee.clone()
+    rerolled.reroll([1, 2, 3])
+    rerolled.reroll([1, 2, 3, 4])
+    const registered = from_memento(register(2, rerolled))
     it("registers the score", () => {
       expect(total(registered.scores[0])).toEqual(2)
     })
@@ -98,20 +81,20 @@ describe("register", () => {
       expect(registered.playerInTurn).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
-      const registered = register(2, { ...rerolled_twice, playerInTurn: 3 })
+      const registered = register(2, { ...rerolled, playerInTurn: 3 })
       expect(registered.playerInTurn).toEqual(0)
     })
     it("rolls new dice", () => {
-      expect(registered.roll).toEqual([6, 5, 4, 3, 2])
+      expect(registered.roll()).toEqual([6, 5, 4, 3, 2])
     })
     it("has two rerolls left", () => {
-      expect(registered.rolls_left).toEqual(2)
+      expect(registered.rolls_left()).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled_twice.scores[0], [2]: 8}
+      const scores = {...rerolled.scores[0], [2]: 8}
       const used = {
-        ...rerolled_twice,
-        scores: update(0, scores, rerolled_twice.scores)
+        ...rerolled,
+        scores: update(0, scores, rerolled.scores)
       }
       expect(() => register(2, used)).toThrow()
     })
@@ -132,9 +115,10 @@ describe("register", () => {
         5, 4, 3, 2, 1, // new re-roll
       ) 
     })
-    const rerolled = reroll([1, 2, 3], yahtzee)
-    const rerolled_twice = reroll([1, 2, 3, 4], rerolled)
-    const registered = register('large straight', rerolled_twice)
+    const rerolled = yahtzee.clone()
+    rerolled.reroll([1, 2, 3])
+    rerolled.reroll([1, 2, 3, 4])
+    const registered = register('large straight', rerolled)
     it("registers the score", () => {
       expect(total(registered.scores[0])).toEqual(20)
     })
@@ -142,20 +126,20 @@ describe("register", () => {
       expect(registered.playerInTurn).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
-      const registered = register('large straight', { ...rerolled_twice, playerInTurn: 3 })
+      const registered = register('large straight', { ...rerolled, playerInTurn: 3 })
       expect(registered.playerInTurn).toEqual(0)
     })
     it("rolls new dice", () => {
-      expect(registered.roll).toEqual([6, 5, 4, 3, 2])
+      expect(registered._roll).toEqual([6, 5, 4, 3, 2])
     })
     it("has two rerolls left", () => {
-      expect(registered.rolls_left).toEqual(2)
+      expect(registered._rolls_left).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled_twice.scores[0], ['large straight']: 20}
+      const scores = {...rerolled.scores[0], ['large straight']: 20}
       const used = {
-        ...rerolled_twice,
-        scores: update(0, scores, rerolled_twice.scores)
+        ...rerolled,
+        scores: update(0, scores, rerolled.scores)
       }
       expect(() => register('large straight', used)).toThrow()
     })
@@ -166,7 +150,7 @@ describe("register", () => {
   })
 })
 
-const almost_finished: Yahtzee = {
+const almost_finished: Yahtzee = from_memento({
   players: ['B', 'A'],
   scores: [
     {
@@ -205,15 +189,15 @@ const almost_finished: Yahtzee = {
     }
   ],
   playerInTurn: 0,
-  roll: [2, 1, 1, 1, 1], // Player 0 roll
-  rolls_left: 2,
+  _roll: [2, 1, 1, 1, 1], // Player 0 roll
+  _rolls_left: 2,
   roller: dice_roller(non_random(
     0, 0, 2, 3, 4, // Player 1 roll
   ))
-}
+})
 
 const player_0_scratch = register('yahtzee', almost_finished)
-const finished = register(1, player_0_scratch)
+const finished = register(1, from_memento(player_0_scratch))
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {

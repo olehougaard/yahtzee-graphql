@@ -1,15 +1,15 @@
 import { YahtzeeSpecs } from "domain/src/model/yahtzee.game"
-import { GameStore, IndexedGame, PendingGame, StoreError } from "./servermodel"
+import { GameStore, IndexedMemento, PendingGame, StoreError } from "./servermodel"
 import { ServerResponse } from "./response"
 
 const not_found = (key: any): StoreError => ({ type: 'Not Found', key })
 
 export class MemoryStore implements GameStore {
-  private _games: IndexedGame[]
+  private _games: IndexedMemento[]
   private _pending_games: PendingGame[]
   private next_id: number = 1
 
-  constructor(...games: IndexedGame[]) {
+  constructor(...games: IndexedMemento[]) {
     this._games = [...games]
     this._pending_games = []
   }
@@ -24,12 +24,12 @@ export class MemoryStore implements GameStore {
       .map(g => g!)
   }
 
-  add(game: IndexedGame) {
+  add(game: IndexedMemento) {
     this._games.push(game)
     return ServerResponse.ok(game)
   }
 
-  update(game: IndexedGame) {
+  update(game: IndexedMemento) {
     const index = this._games.findIndex(g => g.id === game.id)
     if (index === -1) {
       return ServerResponse.error(not_found(index))

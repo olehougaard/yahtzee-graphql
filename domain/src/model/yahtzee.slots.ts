@@ -14,7 +14,7 @@ type OfAKindSlot = {
 
 type SlotType = NumberSlot | OfAKindSlot | { readonly type: 'yahtzee' | 'two pair' | 'full house' | 'small straight' | 'large straight'| 'chance' }
 
-export type Roll = DieValue[]
+export type Roll = Readonly<DieValue[]>
 
 export type Slot = SlotType & Scored
 

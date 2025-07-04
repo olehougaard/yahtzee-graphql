@@ -1,7 +1,7 @@
 import express, { type Express, type Request, type Response } from 'express'
 import bodyParser from 'body-parser'
 import create_api from './api'
-import { IndexedGame, PendingGame, ServerError, StoreError } from './servermodel'
+import { IndexedMemento, PendingGame, ServerError, StoreError } from './servermodel'
 import { WebSocket } from 'ws'
 import { SlotKey } from 'domain/src/model/yahtzee.slots'
 import { ServerResponse } from './response'
@@ -42,7 +42,7 @@ function start_server(ws: WebSocket) {
     
   gameserver.use(bodyParser.json())
     
-  gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame|IndexedGame>) => {
+  gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame|IndexedMemento>) => {
     const { creator, number_of_players } = req.body
     const game = api.new_game(creator, number_of_players)
     send(res, game)
@@ -61,17 +61,17 @@ function start_server(ws: WebSocket) {
     send(res, players)
   })
 
-  gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedGame>) => {
+  gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedMemento>) => {
     const id = parseInt(req.params.id)
     const g = api.join(id, req.body.player)
     send(res, g)
   })
 
-  gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedGame[]>>) => {
+  gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedMemento[]>>) => {
     send(res, api.games())
   })
 
-  gameserver.get('/games/:id', async (req: Request, res: Response<IndexedGame>) => {
+  gameserver.get('/games/:id', async (req: Request, res: Response<IndexedMemento>) => {
     send(res, api.game(parseInt(req.params.id)))
   })
 
