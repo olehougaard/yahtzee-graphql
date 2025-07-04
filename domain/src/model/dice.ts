@@ -13,7 +13,7 @@ export function isDieValue(x: any): x is DieValue {
 
 export interface DiceRoller {
     roll(n: number): DieValue[]
-    reroll(rolled: DieValue[], held: number[]): DieValue[]
+    reroll(rolled: Readonly<DieValue[]>, held: Readonly<number[]>): DieValue[]
 }
 
 export function dice_roller(randomizer: Randomizer): DiceRoller {

@@ -44,10 +44,10 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
   
   const memento: YahtzeeMemento = {
     players,
-    _scores: repeat(new_scores(), players.length),
-    _playerInTurn: 0,
-    _roll: roller.roll(5),
-    _rolls_left: 2
+    scores: repeat(new_scores(), players.length),
+    playerInTurn: 0,
+    roll: roller.roll(5),
+    rolls_left: 2
   }
 
   return from_memento(memento, dice_roller(randomizer))
@@ -55,9 +55,9 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
 
 export function from_memento(memento: YahtzeeMemento, roller: DiceRoller = dice_roller(standardRandomizer)): Yahtzee {
   const players = memento.players
-  let scores: PlayerScores[] = memento._scores.map(s => ({...s}))
-  let playerInTurn = memento._playerInTurn
-  let roll = memento._roll
+  let scores: PlayerScores[] = memento.scores.map(s => ({...s}))
+  let playerInTurn = memento.playerInTurn
+  let roll = memento.roll
   let rolls_left = 2
 
   function reroll(held: number[]) {
@@ -70,10 +70,10 @@ export function from_memento(memento: YahtzeeMemento, roller: DiceRoller = dice_
   function to_memento(): YahtzeeMemento {
     return {
       players,
-      _scores: scores,
-      _playerInTurn: playerInTurn,
-      _roll: roll,
-      _rolls_left: rolls_left,
+      scores: scores,
+      playerInTurn: playerInTurn,
+      roll: roll,
+      rolls_left: rolls_left,
     }
   }
 

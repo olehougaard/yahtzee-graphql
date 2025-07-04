@@ -15,7 +15,7 @@
   let id = ref(parseInt(route.params.id.toString()))
   watch(() => route.params.id, (newId) => id.value = parseInt(newId.toString()))
   const game = computed(() => ongoingGameStore.game(id.value))
-  const enabled = computed(() => game.value !== undefined && playerStore.player === game.value.players[game.value._playerInTurn])
+  const enabled = computed(() => game.value !== undefined && playerStore.player === game.value.players[game.value.playerInTurn])
   const finished = computed(() => game.value === undefined || is_finished(game.value))
   const standings = computed(() => {
     if (game.value === undefined) return []

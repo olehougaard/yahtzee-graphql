@@ -84,7 +84,7 @@ describe("register", () => {
       expect(registered.inTurn()).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
-      const registered = force_state(rerolled, {_playerInTurn: 3})
+      const registered = force_state(rerolled, {playerInTurn: 3})
       registered.register(2)
       expect(registered.inTurn()).toEqual(0)
     })
@@ -97,7 +97,7 @@ describe("register", () => {
     it("disallows registering an already registered slot", () => {
       const scores = {...rerolled.scores()[0], [2]: 8}
       const used = force_state(rerolled, {
-        _scores: update(0, scores, [...rerolled.scores()])
+        scores: update(0, scores, [...rerolled.scores()])
       })
       expect(() => used.register(2)).toThrow()
     })
@@ -131,7 +131,7 @@ describe("register", () => {
       expect(registered.inTurn()).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
-      const registered = force_state(rerolled, { _playerInTurn: 3})
+      const registered = force_state(rerolled, { playerInTurn: 3})
       registered.register('large straight')
       expect(registered.inTurn()).toEqual(0)
     })
@@ -144,7 +144,7 @@ describe("register", () => {
     it("disallows registering an already registered slot", () => {
       const scores = {...rerolled.scores()[0], ['large straight']: 20}
       const used = force_state(rerolled, {
-        _scores: update(0, scores, [...rerolled.scores()])
+        scores: update(0, scores, [...rerolled.scores()])
       })
       expect(() => used.register('large straight')).toThrow()
     })
@@ -157,7 +157,7 @@ describe("register", () => {
 
 const almost_finished: Yahtzee = from_memento({
   players: ['B', 'A'],
-  _scores: [
+  scores: [
     {
       [1]: 3, 
       [2]: 6, 
@@ -193,9 +193,9 @@ const almost_finished: Yahtzee = from_memento({
       'yahtzee': 50
     }
   ],
-  _playerInTurn: 0,
-  _roll: [2, 1, 1, 1, 1], // Player 0 roll
-  _rolls_left: 2
+  playerInTurn: 0,
+  roll: [2, 1, 1, 1, 1], // Player 0 roll
+  rolls_left: 2
 }, dice_roller(non_random(
     0, 0, 2, 3, 4, // Player 1 roll
 )))
