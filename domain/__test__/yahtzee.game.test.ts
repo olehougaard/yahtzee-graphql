@@ -34,7 +34,7 @@ describe("new game", () => {
     expect(yahtzee.rolls_left()).toEqual(2)
   })
   it("is unfinished", () => {
-    expect(is_finished(yahtzee.to_memento())).toBeFalsy()
+    expect(yahtzee.is_finished()).toBeFalsy()
   })
 })
 
@@ -207,10 +207,10 @@ finished.register(1)
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {
-    expect(scores(finished.to_memento())).toEqual([113 + 84, 62 + 162])
+    expect(finished.total_scores()).toEqual([113 + 84, 62 + 162])
   })
   it("also works on unfinished games", () => {
-    expect(scores(almost_finished.to_memento())).toEqual([113 + 84, 60 + 162])
+    expect(almost_finished.total_scores()).toEqual([113 + 84, 60 + 162])
   })
   it("returns zeroes for a new game", () => {
     const yahtzee = new_yahtzee({
@@ -220,16 +220,16 @@ describe("scores", () => {
         2, 4, 3, 1, 0 // First roll - one is added to these
       ) 
     })
-    expect(scores(yahtzee.to_memento())).toEqual([0, 0, 0, 0])
+    expect(yahtzee.total_scores()).toEqual([0, 0, 0, 0])
   })
 })
 
 describe("is_finished", () => {
   it("returns false if the game isn't finished", () => {
-    expect(is_finished(almost_finished.to_memento())).toBeFalsy()
+    expect(almost_finished.is_finished()).toBeFalsy()
   })
   it("returns true if the game is finished", () => {
-    expect(is_finished(finished.to_memento())).toBeTruthy()
+    expect(finished.is_finished()).toBeTruthy()
   })
 })
 
@@ -238,7 +238,7 @@ describe("serialization", () => {
     const new_game = new_yahtzee({players: ['A', 'B']})
     const transferred_game = from_memento(new_game.to_memento())
     it("is still unfinished when transferred", () => {
-      expect(is_finished(transferred_game.to_memento())).toBeFalsy()
+      expect(transferred_game.is_finished()).toBeFalsy()
     })
   })
 })

@@ -22,6 +22,9 @@ export interface Yahtzee {
   playerInTurn(): String
   roll(): Readonly<DieValue[]>
   rolls_left(): number
+
+  total_scores(): number[]
+  is_finished(): boolean
   
   to_memento(): YahtzeeMemento
   clone(): Yahtzee
@@ -52,7 +55,7 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
 export function from_memento(memento: YahtzeeMemento): Yahtzee {
   const roller = memento.roller
   const players = memento.players
-  let scores = memento._scores.map(s => ({...s}))
+  let scores: PlayerScores[] = memento._scores.map(s => ({...s}))
   let playerInTurn = memento._playerInTurn
   let roll = memento._roll
   let rolls_left = 2
@@ -79,6 +82,10 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
     return from_memento(to_memento())
   }
 
+  function is_finished(): boolean {
+    return scores.every(is_finished_player)
+  }
+
   function register(slot: SlotKey) {
     if (registered(scores[playerInTurn], slot)) 
       throw new Error("Cannot overwrite score")
@@ -95,6 +102,8 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
     playerInTurn: () => players[playerInTurn],
     roll: () => roll,
     rolls_left: () => rolls_left,
+    total_scores: () => scores.map(total),
+    is_finished,
     to_memento,
     clone,
     reroll,
