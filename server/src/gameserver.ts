@@ -46,7 +46,6 @@ function start_server(ws: WebSocket) {
     const { creator, number_of_players } = req.body
     const game = api.new_game(creator, number_of_players)
     send(res, game)
-    game.process(api.broadcast)
   })
 
   gameserver.get('/pending-games', async (_: Request, res: Response<Readonly<PendingGame[]>>) => {
@@ -54,39 +53,26 @@ function start_server(ws: WebSocket) {
   })
 
   gameserver.get('/pending-games/:id', async (req: Request, res: Response<PendingGame>) => {
-    const games = api.pending_games()
-      .map(gs => gs.find(g => g.id === parseInt(req.params.id)))
-      .filter(g => g !== undefined, _ => ({ type: 'Not Found', key: req.params.id } as StoreError))
-      .map(g => g!)
-    send(res, games)
+    send(res, api.pending_game(parseInt(req.params.id)))
   })
 
   gameserver.get('/pending-games/:id/players', async (req: Request, res: Response<string[]>) => {
-    const players = api.pending_games()
-      .map(gs => gs.find(g => g.id === parseInt(req.params.id)))
-      .filter(g => g !== undefined, _ => ({ type: 'Not Found', key: req.params.id } as StoreError))
-      .map(g => g!.players)
+    const players = api.game(parseInt(req.params.id)).map(g => g.players)
     send(res, players)
   })
 
   gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedGame>) => {
     const id = parseInt(req.params.id)
     const g = api.join(id, req.body.player)
-    g.process(api.broadcast)
     send(res, g)
   })
 
   gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedGame[]>>) => {
-    const games = api.games()
-    send(res, games)
+    send(res, api.games())
   })
 
   gameserver.get('/games/:id', async (req: Request, res: Response<IndexedGame>) => {
-    const games = api.games()
-      .map(gs => gs.find(g => g.id === parseInt(req.params.id)))
-      .filter(g => g !== undefined, _ => ({ type: 'Not Found', key: req.params.id } as StoreError))
-      .map(g => g!)
-    send(res, games)
+    send(res, api.game(parseInt(req.params.id)))
   })
 
   function resolve_action(id: number, action: Action) {
@@ -99,10 +85,8 @@ function start_server(ws: WebSocket) {
   }
     
   gameserver.post('/games/:id/actions', async (req: TypedRequest<Action>, res: Response) => {
-    const id = parseInt(req.params.id)
-    const game = resolve_action(id, req.body)
+    const game = resolve_action(parseInt(req.params.id), req.body)
     send(res, game)
-    game.process(api.broadcast)
   })
     
   gameserver.listen(8080, () => console.log('Gameserver listening on 8080'))

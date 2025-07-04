@@ -51,6 +51,10 @@ export class ServerModel {
     return this.store.game(id)
   }
 
+  pending_game(id: number) {
+    return this.store.pending_game(id)
+  }
+
   add(creator: string, number_of_players: number) {
     return this.store.add_pending({creator, number_of_players})
       .flatMap(game => this.join(game.id, creator))

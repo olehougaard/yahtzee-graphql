@@ -61,27 +61,43 @@ const server = new ServerModel(new MemoryStore(game0), standardRandomizer)
 
 export default (broadcaster: Broadcaster) => {
   function new_game(creator: string, number_of_players: number): ServerResponse<IndexedGame | PendingGame, ServerError> {
-    return server.add(creator, number_of_players)
+    const newGame = server.add(creator, number_of_players)
+    newGame.process(broadcast)
+    return newGame
   }
   
   function reroll(id: number, held: number[], player: string): ServerResponse<IndexedGame, ServerError> {
-    return server.reroll(id, held, player)
+    const game = server.reroll(id, held, player);
+    game.process(broadcast)
+    return game
   }
   
   function register(id: number, slot: SlotKey, player: string): ServerResponse<IndexedGame, ServerError> {
-    return server.register(id, slot, player)
+    const game = server.register(id, slot, player);
+    game.process(broadcast)
+    return game
   }
 
   function games(): ServerResponse<IndexedGame[], ServerError> {
     return server.all_games()
   }
 
+  function game(id: number): ServerResponse<IndexedGame, ServerError> {
+    return server.game(id)
+  }
+
   function pending_games(): ServerResponse<PendingGame[], ServerError> {
     return server.all_pending_games()
   }
 
+  function pending_game(id: number): ServerResponse<PendingGame, ServerError> {
+    return server.pending_game(id)
+  }
+
   function join(id: number, player: string): ServerResponse<IndexedGame | PendingGame, ServerError> {
-    return server.join(id, player)
+    const game = server.join(id, player)
+    game.process(broadcast)
+    return game
   }
   
   function broadcast(game: IndexedGame | PendingGame): void {
@@ -91,10 +107,11 @@ export default (broadcaster: Broadcaster) => {
   return {
     new_game,
     pending_games,
+    pending_game,
     join,
     games,
+    game,
     reroll,
     register,
-    broadcast,
   }
 }
