@@ -11,7 +11,7 @@ function force_state(y: Yahtzee, props: Partial<YahtzeeMemento>) {
 }
 
 function force_register(y: Yahtzee, playerIndex: number, slot: SlotKey, value: number): Yahtzee {
-  const scores = {...y.scores()[playerIndex].to_memento(), [slot]: value}
+  const scores = {...y.score(playerIndex).to_memento(), [slot]: value}
   return force_state(y, {
     scores: update(playerIndex, scores, y.scores().map(s => s.to_memento()))
   })
@@ -85,7 +85,7 @@ describe("register", () => {
     const registered = rerolled.clone()
     registered.register(2)
     it("registers the score", () => {
-      expect(registered.scores()[0].total()).toEqual(2)
+      expect(registered.score(0).total()).toEqual(2)
     })
     it("moves to the next player", () => {
       expect(registered.inTurn()).toEqual(1)
@@ -108,7 +108,7 @@ describe("register", () => {
     it("allows registering before all rerolls are used", () => {
       const registered = yahtzee
       registered.register(2)
-      expect(registered.scores()[0].total()).toEqual(2)
+      expect(registered.score(0).total()).toEqual(2)
     })
   })
 
@@ -129,7 +129,7 @@ describe("register", () => {
     const registered = rerolled.clone()
     registered.register('large straight')
     it("registers the score", () => {
-      expect(registered.scores()[0].total()).toEqual(20)
+      expect(registered.score(0).total()).toEqual(20)
     })
     it("moves to the next player", () => {
       expect(registered.inTurn()).toEqual(1)
@@ -151,7 +151,7 @@ describe("register", () => {
     })
     it("allows registering before all rerolls are used", () => {
       yahtzee.register('small straight')
-      expect(yahtzee.scores()[0].total()).toEqual(15)
+      expect(yahtzee.score(0).total()).toEqual(15)
     })
   })
 })

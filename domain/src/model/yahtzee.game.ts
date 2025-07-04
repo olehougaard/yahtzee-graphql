@@ -19,10 +19,11 @@ export type YahtzeeOptions = YahtzeeSpecs & {
 export interface Yahtzee {
   readonly roller: DiceRoller
 
-  players(): Readonly<String[]>
+  players(): Readonly<string[]>
   scores(): Readonly<PlayerScores[]>
+  score(index: number): Readonly<PlayerScores>
   inTurn(): number
-  playerInTurn(): String
+  playerInTurn(): string
   roll(): Readonly<DieValue[]>
   rolls_left(): number
 
@@ -59,7 +60,7 @@ export function from_memento(memento: YahtzeeMemento, roller: DiceRoller = dice_
   let scores: PlayerScores[] = memento.scores.map(from_score_memento)
   let playerInTurn = memento.playerInTurn
   let roll = memento.roll
-  let rolls_left = 2
+  let rolls_left = memento.rolls_left
 
   function reroll(held: number[]) {
     if (rolls_left === 0) 
@@ -97,6 +98,7 @@ export function from_memento(memento: YahtzeeMemento, roller: DiceRoller = dice_
     roller,
     players: () => players,
     scores: () => scores,
+    score: i => scores[i],
     inTurn: () => playerInTurn,
     playerInTurn: () => players[playerInTurn],
     roll: () => roll,

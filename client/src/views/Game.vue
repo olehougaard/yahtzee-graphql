@@ -5,7 +5,6 @@
   import { useRoute, useRouter } from 'vue-router';
   import { computed, ref, watch } from 'vue';
   import {usePlayerStore} from '@/stores/player_store';
-  import {is_finished, scores} from 'domain/src/model/yahtzee.game.memento';
 
   const ongoingGameStore = useOngoingGamesStore()
   const playerStore = usePlayerStore()
@@ -15,12 +14,12 @@
   let id = ref(parseInt(route.params.id.toString()))
   watch(() => route.params.id, (newId) => id.value = parseInt(newId.toString()))
   const game = computed(() => ongoingGameStore.game(id.value))
-  const enabled = computed(() => game.value !== undefined && playerStore.player === game.value.players[game.value.playerInTurn])
-  const finished = computed(() => game.value === undefined || is_finished(game.value))
+  const enabled = computed(() => game.value !== undefined && playerStore.player === game.value.playerInTurn())
+  const finished = computed(() => game.value === undefined || game.value.is_finished())
   const standings = computed(() => {
     if (game.value === undefined) return []
     const g = game.value
-    const standings: [string, number][] = scores(g).map((s, i) => [g.players[i], s])
+    const standings: [string, number][] = g.scores().map((s, i) => [g.players()[i], s.total()])
     standings.sort(([_, score1], [__, score2]) => score2 - score1)
     return standings
   })

@@ -5,15 +5,15 @@
   import * as api from './model/api'
   import {usePlayerStore} from './stores/player_store';
   import {usePendingGamesStore} from './stores/pending_games_store';
-import {is_finished} from 'domain/src/model/yahtzee.game.memento';
+  import {from_memento_indexed, type IndexedYahtzeeMemento, type IndexedYahtzeeSpecs} from './model/game';
   
   const ongoingGamesStore = useOngoingGamesStore()
   const pendingGamesStore = usePendingGamesStore()
   const playerStore = usePlayerStore()
 
-  const isParticipant = (g: {players: string[]}) => g.players.indexOf(playerStore.player ?? '') > -1
+  const isParticipant = (g: {players: readonly string[]}) => g.players.indexOf(playerStore.player ?? '') > -1
 
-  const my_ongoing_games = computed(() => ongoingGamesStore.games.filter(g => isParticipant(g) && !is_finished(g)))
+  const my_ongoing_games = computed(() => ongoingGamesStore.games.filter(g => isParticipant(g.to_memento()) && !g.is_finished()))
   const my_pending_games = computed(() => pendingGamesStore.games.filter(isParticipant))
   const other_pending_games = computed(() => pendingGamesStore.games.filter(g => !isParticipant(g)))
 
@@ -21,10 +21,11 @@ import {is_finished} from 'domain/src/model/yahtzee.game.memento';
     const ws = new WebSocket('ws://localhost:9090/publish')
     ws.onopen = () => ws.send(JSON.stringify({type: 'subscribe'}))
     ws.onmessage = ({data: gameJSON}) => {
-      const game = JSON.parse(gameJSON)
-      if (game.pending) {
-        pendingGamesStore.upsert(game)
+      const specOrMemento: IndexedYahtzeeMemento | IndexedYahtzeeSpecs = JSON.parse(gameJSON)
+      if (specOrMemento.pending) {
+        pendingGamesStore.upsert(specOrMemento)
       } else {
+        const game = from_memento_indexed(specOrMemento)
         ongoingGamesStore.upsert(game)
         pendingGamesStore.remove(game)
       }

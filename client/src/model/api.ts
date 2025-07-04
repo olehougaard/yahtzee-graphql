@@ -1,4 +1,4 @@
-import type { IndexedYahtzee, IndexedYahtzeeSpecs } from "./game";
+import { type IndexedYahtzee, type IndexedYahtzeeSpecs, type IndexedYahtzeeMemento, from_memento_indexed } from "./game";
 import type { SlotKey } from "domain/src/model/yahtzee.slots";
 
 const headers = {Accept: 'application/json', 'Content-Type': 'application/json'}
@@ -11,7 +11,8 @@ async function post(url: string, body: {} = {}): Promise<any> {
 
 export async function games(): Promise<IndexedYahtzee[]> {
   const response = await fetch('http://localhost:8080/games', { headers })
-  return await response.json()
+  const memento: IndexedYahtzeeMemento[] = await response.json()
+  return memento.map(from_memento_indexed)
 }
 
 export async function pending_games(): Promise<IndexedYahtzeeSpecs[]> {
@@ -24,7 +25,12 @@ export async function join(game: IndexedYahtzeeSpecs, player: string) {
 }
 
 export async function new_game(number_of_players: number, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {
-  return await post('http://localhost:8080/pending-games', { creator: player, number_of_players })
+  const args = { creator: player, number_of_players };
+  const response: IndexedYahtzeeSpecs|IndexedYahtzeeMemento = await post('http://localhost:8080/pending-games', args)
+  if (response.pending)
+    return response
+  else
+    return from_memento_indexed(response)
 }
 
 async function perform_action(game: IndexedYahtzee, action: any) {

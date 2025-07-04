@@ -7,7 +7,7 @@
 
   const held = reactive([false, false, false, false, false])
 
-  const reroll_enabled = computed(() => game && game.rolls_left > 0 && enabled)
+  const reroll_enabled = computed(() => game && game.rolls_left() > 0 && enabled)
   watch(() => reroll_enabled.value, e => {
     if (!e) {
       for(let i in held) {
@@ -24,11 +24,11 @@
 
 <template>
   <div class="dice">
-    <div v-if="!enabled" class="diceheader">{{game.players[game.playerInTurn]}} is playing</div>
+    <div v-if="!enabled" class="diceheader">{{game.playerInTurn()}} is playing</div>
     <div class="die"></div>
-    <div v-for="d in game.roll" :class="`die die${d}`">{{d}}</div>
+    <div v-for="d in game.roll()" :class="`die die${d}`">{{d}}</div>
     <div class="caption">{{(enabled && reroll_enabled)? 'Hold:' : ''}}</div>
-    <input  v-if="enabled && reroll_enabled" v-for="(_, i) in game.roll" type="checkbox" v-model="held[i]"/>
+    <input  v-if="enabled && reroll_enabled" v-for="(_, i) in game.roll()" type="checkbox" v-model="held[i]"/>
     <div v-if="enabled && reroll_enabled" class="reroll">
       <button @click="reroll()">Re-roll</button>
     </div>

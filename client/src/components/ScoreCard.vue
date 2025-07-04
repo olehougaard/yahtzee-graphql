@@ -1,31 +1,28 @@
 <script setup lang="ts">
   import * as api from '../model/api'
-  import { sum, bonus, total_upper, slot_score } from 'domain/src/model/yahtzee.score';
   import { die_values } from 'domain/src/model/dice';
-  import { scores as game_scores } from 'domain/src/model/yahtzee.game.memento';
   import { computed } from 'vue';
   import type { IndexedYahtzee } from '@/model/game'
-  import { score, slots, type SlotKey, lower_section_keys } from 'domain/src/model/yahtzee.slots';
+  import { slots, type SlotKey, lower_section_keys } from 'domain/src/model/yahtzee.slots';
 
   const { game, player, enabled } = defineProps<{game: IndexedYahtzee, player: string, enabled: boolean}>()
 
-  const players = computed(() => game.players)
-  const scores = computed(() => game.scores)
-
+  const players = computed(() => game.players())
+  
   const register = (key: SlotKey) => {
     if (enabled)
       api.register(game, key, player)
   }
 
   const isActive = (p: string) => {
-    return game.players[game.playerInTurn] === player && player === p
+    return game.playerInTurn() === player && player === p
   }
 
   const playerScores = (key: SlotKey): { player: string; score: number | undefined }[] => {
-    return players.value.map((player, i) => ({player, score: slot_score(scores.value[i], key)}))
+    return players.value.map((player, i) => ({player, score: game.score(i).score(key)}))
   }
 
-  const potentialScore = (key: SlotKey) => score(slots[key], game.roll)
+  const potentialScore = (key: SlotKey) => slots[key].score(game.roll())
 
   const displayScore = (score: number | undefined): string => {
     if (score === 0)
@@ -55,17 +52,17 @@
           <tr>
             <td>Sum</td>
             <td>63</td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{sum(scores[index])}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{game.score(index).sum()}}</td>
           </tr>
           <tr>
             <td>Bonus</td>
             <td>50</td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{bonus(scores[index])}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{game.score(index).bonus()}}</td>
           </tr>
           <tr>
             <td>Total</td>
             <td></td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{total_upper(scores[index])}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{game.score(index).total_upper()}}</td>
           </tr>
           <tr class="section_header"><td :colspan='players.length + 2'>Lower Section</td></tr>
           <tr v-for="key in lower_section_keys">
@@ -80,7 +77,7 @@
           <tr>
             <td>Total</td>
             <td></td>
-            <td v-for="(player, index) in players" :class="activeClass(player)">{{game_scores(game)[index]}}</td>
+            <td v-for="(player, index) in players" :class="activeClass(player)">{{game.score(index).total()}}</td>
           </tr>
         </tbody>
       </table>

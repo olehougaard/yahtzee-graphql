@@ -11,6 +11,7 @@ export interface PlayerScores {
   sum(): number
   bonus(): number
   total(): number
+  total_upper(): number
 
   is_finished(): boolean
 }
@@ -52,6 +53,7 @@ export function from_memento(memento: PlayerScoresMemento): PlayerScores {
     score,
     sum,
     bonus,
+    total_upper: () => sum() + bonus(),
     total: () => total(scores),
     is_finished,
   }
