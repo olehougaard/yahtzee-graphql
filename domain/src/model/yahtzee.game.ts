@@ -112,16 +112,6 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
   }
 }
 
-export function reroll(held: number[], yahtzee: Yahtzee): Yahtzee {
-  yahtzee.reroll(held)
-  return yahtzee
-}
-
-export function register(slot: SlotKey, yahtzee: Yahtzee): Yahtzee {
-  yahtzee.register(slot)
-  return yahtzee
-}
-
 export function scores(yahtzee: Omit<YahtzeeMemento, 'roller'>): number[] {
   return yahtzee._scores.map(total)
 }

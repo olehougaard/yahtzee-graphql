@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals'
-import { from_memento, is_finished, new_yahtzee, register, reroll, scores, Yahtzee, YahtzeeMemento } from '../src/model/yahtzee.game'
+import { from_memento, is_finished, new_yahtzee, scores, Yahtzee, YahtzeeMemento } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
 import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
@@ -98,10 +98,11 @@ describe("register", () => {
       const used = force_state(rerolled, {
         _scores: update(0, scores, [...rerolled.scores()])
       })
-      expect(() => register(2, used)).toThrow()
+      expect(() => used.register(2)).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
-      const registered = register(2, yahtzee)
+      const registered = yahtzee
+      registered.register(2)
       expect(total(registered.scores()[0])).toEqual(2)
     })
   })
@@ -144,11 +145,11 @@ describe("register", () => {
       const used = force_state(rerolled, {
         _scores: update(0, scores, [...rerolled.scores()])
       })
-      expect(() => register('large straight', used)).toThrow()
+      expect(() => used.register('large straight')).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
-      const registered = register('small straight', yahtzee)
-      expect(total(registered.scores()[0])).toEqual(15)
+      yahtzee.register('small straight')
+      expect(total(yahtzee.scores()[0])).toEqual(15)
     })
   })
 })
@@ -199,8 +200,9 @@ const almost_finished: Yahtzee = from_memento({
   ))
 })
 
-const player_0_scratch = register('yahtzee', almost_finished.clone())
-const finished = register(1, player_0_scratch)
+const finished = almost_finished.clone()
+finished.register('yahtzee')
+finished.register(1)
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {
