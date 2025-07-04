@@ -1,12 +1,12 @@
 import { describe, it, expect } from '@jest/globals'
-import { PlayerScores, register, bonus, new_scores, sum, total, is_finished } from '../src/model/yahtzee.score'
+import { PlayerScoresMemento, register, bonus, new_scores_memento, sum, total, is_finished } from '../src/model/yahtzee.score.memento'
 import { die_values } from '../src/model/dice'
 import { lower_section_slots, LowerSlotKey } from '../src/model/yahtzee.slots'
 import { repeat } from '../src/utils/array_utils'
 
 describe("Upper section", () => {
   describe("new", () => {
-    const section = new_scores()
+    const section = new_scores_memento()
 
     it("has undefined for all scores", () => {
       expect(die_values.map(d => section[d])).toEqual(repeat(undefined, 6))
@@ -14,7 +14,7 @@ describe("Upper section", () => {
   })
 
   describe("registering first score", () => {
-    const section = new_scores()
+    const section = new_scores_memento()
     const registered = register(section, 3, [3, 1, 3, 2, 6])
     it("Registers the score in the appropriate slot", () => {
       expect(registered[3]).toEqual(6)
@@ -41,7 +41,7 @@ describe("Upper section", () => {
   })
 
   describe("totalling the section", () => {
-    const scores: PlayerScores = {
+    const scores: PlayerScoresMemento = {
           [1]: undefined,
           [2]: 6,
           [3]: 6,
@@ -61,7 +61,7 @@ describe("Upper section", () => {
 
 describe("lower section", () => {
   describe("new", () => {
-    const scores = new_scores()
+    const scores = new_scores_memento()
     const lower_section_keys = Object.keys(lower_section_slots) as LowerSlotKey[]
     it("has undefined for all scores", () => {
       expect(lower_section_keys.map(k => scores[k])).toEqual(Array.from(new Array(lower_section_keys.length), _ => undefined))
@@ -69,7 +69,7 @@ describe("lower section", () => {
   })
 
   describe("registering a score", () => {
-    const scores = new_scores()
+    const scores = new_scores_memento()
     it("Registers the score in the appropriate slot", () => {
       const registered = register(scores, 'pair', [3, 1, 3, 2, 6])
       expect(registered['pair']).toEqual(6)
@@ -81,7 +81,7 @@ describe("lower section", () => {
   })
 
   describe("totalling the section", () => {
-    const scores: PlayerScores = {
+    const scores: PlayerScoresMemento = {
       [1]: undefined,
       [2]: undefined,
       [3]: undefined,
@@ -102,7 +102,7 @@ describe("lower section", () => {
 
 describe("player scores", () => {
   describe("new player scores", () => {
-    const scores: PlayerScores = new_scores()
+    const scores: PlayerScoresMemento = new_scores_memento()
 
     it("has a sum of 0", () => {
       expect(sum(scores)).toEqual(0)

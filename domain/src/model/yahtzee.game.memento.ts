@@ -1,9 +1,9 @@
 import { DieValue } from "./dice"
-import { is_finished as is_finished_player, total, PlayerScores } from "./yahtzee.score"
+import { is_finished as is_finished_player, total, PlayerScoresMemento } from "./yahtzee.score.memento"
 
 export interface YahtzeeMemento {
   readonly players: Readonly<string[]>,
-  readonly scores: Readonly<PlayerScores[]>,
+  readonly scores: Readonly<PlayerScoresMemento[]>,
   readonly playerInTurn: number,
   readonly roll: Readonly<DieValue[]>,
   readonly rolls_left: number

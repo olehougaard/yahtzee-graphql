@@ -1,13 +1,20 @@
 import { describe, it, expect } from '@jest/globals'
 import { from_memento, new_yahtzee, Yahtzee } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
-import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
 import { YahtzeeMemento } from '../src/model/yahtzee.game.memento'
 import { dice_roller } from '../src/model/dice'
+import { SlotKey } from '../src/model/yahtzee.slots'
 
 function force_state(y: Yahtzee, props: Partial<YahtzeeMemento>) {
   return from_memento({...y.to_memento(), ...props}, y.roller)
+}
+
+function force_register(y: Yahtzee, playerIndex: number, slot: SlotKey, value: number): Yahtzee {
+  const scores = {...y.scores()[playerIndex].to_memento(), [slot]: value}
+  return force_state(y, {
+    scores: update(playerIndex, scores, y.scores().map(s => s.to_memento()))
+  })
 }
 
 describe("new game", () => {
@@ -22,7 +29,7 @@ describe("new game", () => {
     expect(yahtzee.players()).toEqual(['D', 'C', 'B', 'A'])
   })
   it("has new scores for each player", () => {
-    expect(yahtzee.scores().map(total)).toEqual([0, 0, 0, 0])
+    expect(yahtzee.scores().map(s => s.total())).toEqual([0, 0, 0, 0])
   })
   it("starts with player index 0", () => {
     expect(yahtzee.inTurn()).toEqual(0)
@@ -78,7 +85,7 @@ describe("register", () => {
     const registered = rerolled.clone()
     registered.register(2)
     it("registers the score", () => {
-      expect(total(registered.scores()[0])).toEqual(2)
+      expect(registered.scores()[0].total()).toEqual(2)
     })
     it("moves to the next player", () => {
       expect(registered.inTurn()).toEqual(1)
@@ -95,16 +102,13 @@ describe("register", () => {
       expect(registered.rolls_left()).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled.scores()[0], [2]: 8}
-      const used = force_state(rerolled, {
-        scores: update(0, scores, [...rerolled.scores()])
-      })
+      const used = force_register(rerolled, 0, 2, 8)
       expect(() => used.register(2)).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
       const registered = yahtzee
       registered.register(2)
-      expect(total(registered.scores()[0])).toEqual(2)
+      expect(registered.scores()[0].total()).toEqual(2)
     })
   })
 
@@ -125,7 +129,7 @@ describe("register", () => {
     const registered = rerolled.clone()
     registered.register('large straight')
     it("registers the score", () => {
-      expect(total(registered.scores()[0])).toEqual(20)
+      expect(registered.scores()[0].total()).toEqual(20)
     })
     it("moves to the next player", () => {
       expect(registered.inTurn()).toEqual(1)
@@ -142,15 +146,12 @@ describe("register", () => {
       expect(registered.rolls_left()).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled.scores()[0], ['large straight']: 20}
-      const used = force_state(rerolled, {
-        scores: update(0, scores, [...rerolled.scores()])
-      })
+      const used = force_register(rerolled, 0, 'large straight', 20)
       expect(() => used.register('large straight')).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
       yahtzee.register('small straight')
-      expect(total(yahtzee.scores()[0])).toEqual(15)
+      expect(yahtzee.scores()[0].total()).toEqual(15)
     })
   })
 })
