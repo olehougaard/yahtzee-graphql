@@ -14,10 +14,10 @@ export interface Broadcaster {
 const game0: IndexedMemento = {
   id: 0,
   players: ['Alice', 'Bob'],
-  playerInTurn: 0,
+  _playerInTurn: 0,
   _roll: [1, 2, 3, 2, 4],
   _rolls_left: 2,
-  scores:[
+  _scores:[
     {
       [1]: 3,
       [2]: undefined,

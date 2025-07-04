@@ -95,20 +95,17 @@ export class ServerModel {
   }
 
   reroll(id: number, held: number[], player: string): ServerResponse<IndexedMemento, ServerError> {
-    const yahtzee = this.load_yahtzee(id)
-      .filter(game => game && game.players[game.playerInTurn] === player, _ => Forbidden)
-    yahtzee.process(game => game.reroll(held))
-    return yahtzee
+    return this.update(id, player, game => game.reroll(held))
   }
   
   register(id: number, slot: SlotKey, player: string): ServerResponse<IndexedMemento, ServerError> {
-    return this.load_yahtzee(id)
-      .filter(game => game && game.players[game.playerInTurn] === player, _ => Forbidden)
-      .flatMap(game => this.update(game.id, Game.register.bind(null, slot)))
+    return this.update(id, player, game => game.register(slot))
   }
-
-  private update(id: number, updater: (g: IndexedYahtzee) => YahtzeeMemento) {
-    return this.load_yahtzee(id)
-      .flatMap(game => this.store.update({ ...updater(game), id, pending: game.pending }))
+  
+  private update(id: number, player: string, processor: (game: IndexedYahtzee) => void): ServerResponse<IndexedMemento, ServerError> {
+    const yahtzee = this.load_yahtzee(id)
+      .filter(game => game && game.players[game._playerInTurn] === player, _ => Forbidden)
+    yahtzee.process(processor)
+    return yahtzee.flatMap(game => this.store.update(game))
   }
 }

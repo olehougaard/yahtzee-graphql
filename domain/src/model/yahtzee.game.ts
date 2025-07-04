@@ -16,18 +16,24 @@ export type YahtzeeOptions = YahtzeeSpecs & {
 
 export interface YahtzeeMemento {
   players: string[],
-  scores: PlayerScores[],
-  playerInTurn: number,
+  _scores: PlayerScores[],
+  _playerInTurn: number,
   _roll: DieValue[],
   _rolls_left: number,
   roller: DiceRoller
 }
 
 export interface Yahtzee extends YahtzeeMemento {
-  reroll(held: number[]): void
-  clone(): Yahtzee
+  scores(): Readonly<PlayerScores[]>
+  playerInTurn(): number
   roll(): Readonly<DieValue[]>
   rolls_left(): number
+  
+  to_memento(): YahtzeeMemento
+  clone(): Yahtzee
+
+  reroll(held: number[]): void
+  register(slot: SlotKey): void
 }
 
 export function new_yahtzee({players, number_of_players, randomizer = standardRandomizer}: Readonly<YahtzeeOptions>): Yahtzee {
@@ -37,10 +43,10 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
   const roller = dice_roller(randomizer)
   players = standardShuffler(randomizer, players)
   
-  const memento = {
+  const memento: YahtzeeMemento = {
     players,
-    scores: repeat(new_scores(), players.length),
-    playerInTurn: 0,
+    _scores: repeat(new_scores(), players.length),
+    _playerInTurn: 0,
     _roll: roller.roll(5),
     _rolls_left: 2,
     roller
@@ -52,8 +58,8 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
 export function from_memento(memento: YahtzeeMemento): Yahtzee {
   const roller = memento.roller
   const players = memento.players
-  let scores = memento.scores.map(s => ({...s}))
-  let playerInTurn = memento.playerInTurn
+  let scores = memento._scores.map(s => ({...s}))
+  let playerInTurn = memento._playerInTurn
   let roll = memento._roll
   let rolls_left = 2
 
@@ -67,8 +73,8 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
   function to_memento(): YahtzeeMemento {
     return {
       players,
-      scores,
-      playerInTurn,
+      _scores: scores,
+      _playerInTurn: playerInTurn,
       _roll: roll,
       _rolls_left: rolls_left,
       roller
@@ -79,17 +85,30 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
     return from_memento(to_memento())
   }
 
+  function register(slot: SlotKey) {
+    if (registered(scores[playerInTurn], slot)) 
+      throw new Error("Cannot overwrite score")
+    scores[playerInTurn] = register_player(scores[playerInTurn], slot, roll)
+    playerInTurn = (playerInTurn + 1) % players.length
+    roll = roller.roll(5)
+    rolls_left = 2
+  }
+
   return {
     players,
-    scores,
-    playerInTurn,
+    roller,
+    _scores: scores,
+    _playerInTurn: playerInTurn,
     _roll: roll,
     _rolls_left: rolls_left,
-    roller,
-    reroll,
-    clone,
+    scores: () => scores,
+    playerInTurn: () => playerInTurn,
     roll: () => roll,
-    rolls_left: () => rolls_left 
+    rolls_left: () => rolls_left,
+    to_memento,
+    clone,
+    reroll,
+    register
   }
 }
 
@@ -98,23 +117,15 @@ export function reroll(held: number[], yahtzee: Yahtzee): Yahtzee {
   return yahtzee
 }
 
-export function register(slot: SlotKey, yahtzee: Yahtzee): YahtzeeMemento {
-    const { playerInTurn, scores } = yahtzee
-    const roll = yahtzee.roll()
-    if (registered(scores[playerInTurn], slot)) throw new Error("Cannot overwrite score")
-    return {
-      ...yahtzee,
-      scores: update(playerInTurn, register_player(scores[playerInTurn], slot, roll), scores),
-      playerInTurn: (playerInTurn + 1) % yahtzee.players.length,
-      _roll: yahtzee.roller.roll(5),
-      _rolls_left: 2
-    }
+export function register(slot: SlotKey, yahtzee: Yahtzee): Yahtzee {
+  yahtzee.register(slot)
+  return yahtzee
 }
 
 export function scores(yahtzee: Omit<YahtzeeMemento, 'roller'>): number[] {
-  return yahtzee.scores.map(total)
+  return yahtzee._scores.map(total)
 }
 
 export function is_finished(yahtzee: Omit<YahtzeeMemento, 'roller'>): boolean {
-  return yahtzee.scores.every(is_finished_player)
+  return yahtzee._scores.every(is_finished_player)
 }

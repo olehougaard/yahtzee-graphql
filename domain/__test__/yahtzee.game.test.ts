@@ -5,6 +5,10 @@ import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
 import { dice_roller } from '../src/model/dice'
 
+function force_state(y: Yahtzee, props: Partial<YahtzeeMemento>) {
+  return from_memento({...y.to_memento(), ...props})
+}
+
 describe("new game", () => {
   const yahtzee = new_yahtzee({
     players: ['A', 'B', 'C', 'D'], 
@@ -16,20 +20,17 @@ describe("new game", () => {
   it("shuffles the order of players", () => {
     expect(yahtzee.players).toEqual(['D', 'C', 'B', 'A'])
   })
-  it("has a player score per player", () => {
-    expect(yahtzee.scores.length).toEqual(4)
-  })
-  it("has new scores", () => {
-    expect(yahtzee.scores.map(total)).toEqual([0, 0, 0, 0])
+  it("has new scores for each player", () => {
+    expect(yahtzee.scores().map(total)).toEqual([0, 0, 0, 0])
   })
   it("starts with player index 0", () => {
-    expect(yahtzee.playerInTurn).toEqual(0)
+    expect(yahtzee.playerInTurn()).toEqual(0)
   })
   it("starts with die already rolled", () => {
-    expect(yahtzee._roll).toEqual([3, 5, 4, 2, 1])
+    expect(yahtzee.roll()).toEqual([3, 5, 4, 2, 1])
   })
   it("starts with having two rerolls remaining", () => {
-    expect(yahtzee._rolls_left).toEqual(2)
+    expect(yahtzee.rolls_left()).toEqual(2)
   })
   it("is unfinished", () => {
     expect(is_finished(yahtzee)).toBeFalsy()
@@ -73,16 +74,18 @@ describe("register", () => {
     const rerolled = yahtzee.clone()
     rerolled.reroll([1, 2, 3])
     rerolled.reroll([1, 2, 3, 4])
-    const registered = from_memento(register(2, rerolled))
+    const registered = rerolled.clone()
+    registered.register(2)
     it("registers the score", () => {
-      expect(total(registered.scores[0])).toEqual(2)
+      expect(total(registered.scores()[0])).toEqual(2)
     })
     it("moves to the next player", () => {
-      expect(registered.playerInTurn).toEqual(1)
+      expect(registered.playerInTurn()).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
-      const registered = register(2, { ...rerolled, playerInTurn: 3 })
-      expect(registered.playerInTurn).toEqual(0)
+      const registered = force_state(rerolled, {_playerInTurn: 3})
+      registered.register(2)
+      expect(registered.playerInTurn()).toEqual(0)
     })
     it("rolls new dice", () => {
       expect(registered.roll()).toEqual([6, 5, 4, 3, 2])
@@ -91,16 +94,15 @@ describe("register", () => {
       expect(registered.rolls_left()).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled.scores[0], [2]: 8}
-      const used = {
-        ...rerolled,
-        scores: update(0, scores, rerolled.scores)
-      }
+      const scores = {...rerolled.scores()[0], [2]: 8}
+      const used = force_state(rerolled, {
+        _scores: update(0, scores, [...rerolled.scores()])
+      })
       expect(() => register(2, used)).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
       const registered = register(2, yahtzee)
-      expect(total(registered.scores[0])).toEqual(2)
+      expect(total(registered.scores()[0])).toEqual(2)
     })
   })
 
@@ -118,41 +120,42 @@ describe("register", () => {
     const rerolled = yahtzee.clone()
     rerolled.reroll([1, 2, 3])
     rerolled.reroll([1, 2, 3, 4])
-    const registered = register('large straight', rerolled)
+    const registered = rerolled.clone()
+    registered.register('large straight')
     it("registers the score", () => {
-      expect(total(registered.scores[0])).toEqual(20)
+      expect(total(registered.scores()[0])).toEqual(20)
     })
     it("moves to the next player", () => {
-      expect(registered.playerInTurn).toEqual(1)
+      expect(registered.playerInTurn()).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
-      const registered = register('large straight', { ...rerolled, playerInTurn: 3 })
-      expect(registered.playerInTurn).toEqual(0)
+      const registered = force_state(rerolled, { _playerInTurn: 3})
+      registered.register('large straight')
+      expect(registered.playerInTurn()).toEqual(0)
     })
     it("rolls new dice", () => {
-      expect(registered._roll).toEqual([6, 5, 4, 3, 2])
+      expect(registered.roll()).toEqual([6, 5, 4, 3, 2])
     })
     it("has two rerolls left", () => {
-      expect(registered._rolls_left).toEqual(2)
+      expect(registered.rolls_left()).toEqual(2)
     })
     it("disallows registering an already registered slot", () => {
-      const scores = {...rerolled.scores[0], ['large straight']: 20}
-      const used = {
-        ...rerolled,
-        scores: update(0, scores, rerolled.scores)
-      }
+      const scores = {...rerolled.scores()[0], ['large straight']: 20}
+      const used = force_state(rerolled, {
+        _scores: update(0, scores, [...rerolled.scores()])
+      })
       expect(() => register('large straight', used)).toThrow()
     })
     it("allows registering before all rerolls are used", () => {
       const registered = register('small straight', yahtzee)
-      expect(total(registered.scores[0])).toEqual(15)
+      expect(total(registered.scores()[0])).toEqual(15)
     })
   })
 })
 
 const almost_finished: Yahtzee = from_memento({
   players: ['B', 'A'],
-  scores: [
+  _scores: [
     {
       [1]: 3, 
       [2]: 6, 
@@ -188,7 +191,7 @@ const almost_finished: Yahtzee = from_memento({
       'yahtzee': 50
     }
   ],
-  playerInTurn: 0,
+  _playerInTurn: 0,
   _roll: [2, 1, 1, 1, 1], // Player 0 roll
   _rolls_left: 2,
   roller: dice_roller(non_random(
@@ -196,8 +199,8 @@ const almost_finished: Yahtzee = from_memento({
   ))
 })
 
-const player_0_scratch = register('yahtzee', almost_finished)
-const finished = register(1, from_memento(player_0_scratch))
+const player_0_scratch = register('yahtzee', almost_finished.clone())
+const finished = register(1, player_0_scratch)
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {
