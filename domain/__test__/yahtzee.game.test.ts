@@ -1,9 +1,10 @@
 import { describe, it, expect } from '@jest/globals'
-import { from_memento, is_finished, new_yahtzee, scores, Yahtzee, YahtzeeMemento } from '../src/model/yahtzee.game'
+import { from_memento, new_yahtzee, Yahtzee } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
 import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
 import { dice_roller } from '../src/model/dice'
+import { is_finished, scores, YahtzeeMemento } from '../src/model/yahtzee.game.memento'
 
 function force_state(y: Yahtzee, props: Partial<YahtzeeMemento>) {
   return from_memento({...y.to_memento(), ...props})
@@ -18,13 +19,13 @@ describe("new game", () => {
     ) 
   })
   it("shuffles the order of players", () => {
-    expect(yahtzee.players).toEqual(['D', 'C', 'B', 'A'])
+    expect(yahtzee.players()).toEqual(['D', 'C', 'B', 'A'])
   })
   it("has new scores for each player", () => {
     expect(yahtzee.scores().map(total)).toEqual([0, 0, 0, 0])
   })
   it("starts with player index 0", () => {
-    expect(yahtzee.playerInTurn()).toEqual(0)
+    expect(yahtzee.inTurn()).toEqual(0)
   })
   it("starts with die already rolled", () => {
     expect(yahtzee.roll()).toEqual([3, 5, 4, 2, 1])
@@ -33,7 +34,7 @@ describe("new game", () => {
     expect(yahtzee.rolls_left()).toEqual(2)
   })
   it("is unfinished", () => {
-    expect(is_finished(yahtzee)).toBeFalsy()
+    expect(is_finished(yahtzee.to_memento())).toBeFalsy()
   })
 })
 
@@ -80,12 +81,12 @@ describe("register", () => {
       expect(total(registered.scores()[0])).toEqual(2)
     })
     it("moves to the next player", () => {
-      expect(registered.playerInTurn()).toEqual(1)
+      expect(registered.inTurn()).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
       const registered = force_state(rerolled, {_playerInTurn: 3})
       registered.register(2)
-      expect(registered.playerInTurn()).toEqual(0)
+      expect(registered.inTurn()).toEqual(0)
     })
     it("rolls new dice", () => {
       expect(registered.roll()).toEqual([6, 5, 4, 3, 2])
@@ -127,12 +128,12 @@ describe("register", () => {
       expect(total(registered.scores()[0])).toEqual(20)
     })
     it("moves to the next player", () => {
-      expect(registered.playerInTurn()).toEqual(1)
+      expect(registered.inTurn()).toEqual(1)
     })
     it("moves to the first player after the last player", () => {
       const registered = force_state(rerolled, { _playerInTurn: 3})
       registered.register('large straight')
-      expect(registered.playerInTurn()).toEqual(0)
+      expect(registered.inTurn()).toEqual(0)
     })
     it("rolls new dice", () => {
       expect(registered.roll()).toEqual([6, 5, 4, 3, 2])
@@ -206,10 +207,10 @@ finished.register(1)
 
 describe("scores", () => {
   it("returns an array with the sums of the scores", () => {
-    expect(scores(finished)).toEqual([113 + 84, 62 + 162])
+    expect(scores(finished.to_memento())).toEqual([113 + 84, 62 + 162])
   })
   it("also works on unfinished games", () => {
-    expect(scores(almost_finished)).toEqual([113 + 84, 60 + 162])
+    expect(scores(almost_finished.to_memento())).toEqual([113 + 84, 60 + 162])
   })
   it("returns zeroes for a new game", () => {
     const yahtzee = new_yahtzee({
@@ -219,25 +220,25 @@ describe("scores", () => {
         2, 4, 3, 1, 0 // First roll - one is added to these
       ) 
     })
-    expect(scores(yahtzee)).toEqual([0, 0, 0, 0])
+    expect(scores(yahtzee.to_memento())).toEqual([0, 0, 0, 0])
   })
 })
 
 describe("is_finished", () => {
   it("returns false if the game isn't finished", () => {
-    expect(is_finished(almost_finished)).toBeFalsy()
+    expect(is_finished(almost_finished.to_memento())).toBeFalsy()
   })
   it("returns true if the game is finished", () => {
-    expect(is_finished(finished)).toBeTruthy()
+    expect(is_finished(finished.to_memento())).toBeTruthy()
   })
 })
 
 describe("serialization", () => {
   describe("new game", () => {
     const new_game = new_yahtzee({players: ['A', 'B']})
-    const transferred_game = JSON.parse(JSON.stringify(new_game))
+    const transferred_game = from_memento(new_game.to_memento())
     it("is still unfinished when transferred", () => {
-      expect(is_finished(transferred_game)).toBeFalsy()
+      expect(is_finished(transferred_game.to_memento())).toBeFalsy()
     })
   })
 })

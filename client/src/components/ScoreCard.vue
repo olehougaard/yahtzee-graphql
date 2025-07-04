@@ -2,7 +2,7 @@
   import * as api from '../model/api'
   import { sum, bonus, total_upper, slot_score } from 'domain/src/model/yahtzee.score';
   import { die_values } from 'domain/src/model/dice';
-  import { scores as game_scores } from 'domain/src/model/yahtzee.game';
+  import { scores as game_scores } from 'domain/src/model/yahtzee.game.memento';
   import { computed } from 'vue';
   import type { IndexedYahtzee } from '@/model/game'
   import { score, slots, type SlotKey, lower_section_keys } from 'domain/src/model/yahtzee.slots';
@@ -10,7 +10,7 @@
   const { game, player, enabled } = defineProps<{game: IndexedYahtzee, player: string, enabled: boolean}>()
 
   const players = computed(() => game.players)
-  const scores = computed(() => game.scores)
+  const scores = computed(() => game._scores)
 
   const register = (key: SlotKey) => {
     if (enabled)
@@ -18,14 +18,14 @@
   }
 
   const isActive = (p: string) => {
-    return game.players[game.playerInTurn] === player && player === p
+    return game.players[game._playerInTurn] === player && player === p
   }
 
   const playerScores = (key: SlotKey): { player: string; score: number | undefined }[] => {
     return players.value.map((player, i) => ({player, score: slot_score(scores.value[i], key)}))
   }
 
-  const potentialScore = (key: SlotKey) => score(slots[key], game.roll)
+  const potentialScore = (key: SlotKey) => score(slots[key], game._roll)
 
   const displayScore = (score: number | undefined): string => {
     if (score === 0)

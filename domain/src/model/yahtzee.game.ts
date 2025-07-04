@@ -1,6 +1,7 @@
-import { repeat, update } from "../utils/array_utils"
+import { repeat } from "../utils/array_utils"
 import { Randomizer, standardRandomizer, standardShuffler } from "../utils/random_utils"
-import { dice_roller, DiceRoller, DieValue } from "./dice"
+import { dice_roller, DieValue } from "./dice"
+import { YahtzeeMemento } from "./yahtzee.game.memento"
 import { register as register_player, is_finished as is_finished_player, registered, total, new_scores, PlayerScores } from "./yahtzee.score"
 import { SlotKey } from "./yahtzee.slots"
 
@@ -14,18 +15,11 @@ export type YahtzeeOptions = YahtzeeSpecs & {
   randomizer?: Randomizer
 }
 
-export interface YahtzeeMemento {
-  players: string[],
-  _scores: PlayerScores[],
-  _playerInTurn: number,
-  _roll: DieValue[],
-  _rolls_left: number,
-  roller: DiceRoller
-}
-
-export interface Yahtzee extends YahtzeeMemento {
+export interface Yahtzee {
+  players(): Readonly<String[]>
   scores(): Readonly<PlayerScores[]>
-  playerInTurn(): number
+  inTurn(): number
+  playerInTurn(): String
   roll(): Readonly<DieValue[]>
   rolls_left(): number
   
@@ -95,14 +89,10 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
   }
 
   return {
-    players,
-    roller,
-    _scores: scores,
-    _playerInTurn: playerInTurn,
-    _roll: roll,
-    _rolls_left: rolls_left,
+    players: () => players,
     scores: () => scores,
-    playerInTurn: () => playerInTurn,
+    inTurn: () => playerInTurn,
+    playerInTurn: () => players[playerInTurn],
     roll: () => roll,
     rolls_left: () => rolls_left,
     to_memento,
@@ -110,12 +100,4 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
     reroll,
     register
   }
-}
-
-export function scores(yahtzee: Omit<YahtzeeMemento, 'roller'>): number[] {
-  return yahtzee._scores.map(total)
-}
-
-export function is_finished(yahtzee: Omit<YahtzeeMemento, 'roller'>): boolean {
-  return yahtzee._scores.every(is_finished_player)
 }
