@@ -2,8 +2,8 @@ import { repeat } from "../utils/array_utils"
 import { Randomizer, standardRandomizer, standardShuffler } from "../utils/random_utils"
 import { dice_roller, DiceRoller, DieValue } from "./dice"
 import { YahtzeeMemento } from "./yahtzee.game.memento"
-import { from_score_memento, PlayerScores } from "./yahtzee.score"
-import { register as register_player, is_finished as is_finished_player, registered, total, new_scores_memento, PlayerScoresMemento } from "./yahtzee.score.memento"
+import { from_memento as from_score_memento, PlayerScores } from "./yahtzee.score"
+import { new_scores_memento } from "./yahtzee.score.memento"
 import { SlotKey } from "./yahtzee.slots"
 
 export type YahtzeeSpecs = {
@@ -83,7 +83,7 @@ export function from_memento(memento: YahtzeeMemento, roller: DiceRoller = dice_
   }
 
   function is_finished(): boolean {
-    return scores.every(s => is_finished_player(s.to_memento()))
+    return scores.every(s => s.is_finished())
   }
 
   function register(slot: SlotKey) {

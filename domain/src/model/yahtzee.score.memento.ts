@@ -13,7 +13,7 @@ export type PlayerScoresMemento = UpperSection & LowerSection
 
 const lower_section_keys: Readonly<LowerSectionKey[]> = Object.keys(lower_section_slots) as LowerSectionKey[]
 
-const slot_keys: Readonly<LowerSectionKey[]> = Object.keys(slots) as LowerSectionKey[]
+export const slot_keys: Readonly<SlotKey[]> = Object.keys(slots) as SlotKey[]
 
 function upper_section(): UpperSection {
   return Object.fromEntries(die_values.map(v => [v, undefined])) as DieArray<undefined>
