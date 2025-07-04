@@ -7,6 +7,10 @@ import { dice_roller } from "models/src/model/dice";
 import { standardRandomizer } from "models/src/utils/random_utils";
 import { MemoryStore } from "./memorystore";
 
+export interface Broadcaster {
+  send: WebSocket['send']
+}
+
 const game0: IndexedGame = {
   id: 0,
   players: ['Alice', 'Bob'],
@@ -55,7 +59,7 @@ const game0: IndexedGame = {
 
 const server = new ServerModel(new MemoryStore(game0), standardRandomizer)
 
-export default (ws: WebSocket) => {
+export default (broadcaster: Broadcaster) => {
   function new_game(creator: string, number_of_players: number): IndexedGame | PendingGame {
     return server.add(creator, number_of_players)
   }
@@ -87,7 +91,7 @@ export default (ws: WebSocket) => {
   }
   
   function broadcast(game: IndexedGame | PendingGame): void {
-    ws.send(JSON.stringify({type: 'send', message: game}))
+    broadcaster.send(JSON.stringify({type: 'send', message: game}))
   }
 
   return {
