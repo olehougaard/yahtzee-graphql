@@ -1,15 +1,13 @@
 import { die_values, DieArray } from './dice'
-import { lower_section_slots, upper_section_slots, Roll, SlotKey } from './yahtzee.slots'
+import { lower_section_slots, slots, Roll, SlotKey } from './yahtzee.slots'
 
-export const slots = { ...lower_section_slots, ...upper_section_slots }
-
-export type UpperSection = Readonly<DieArray<number | undefined>>
+type UpperSection = Readonly<DieArray<number | undefined>>
 
 type LowerSectionSlots = typeof lower_section_slots
 
 type LowerSectionKey = keyof LowerSectionSlots
 
-export type LowerSection = Readonly<Partial<Record<LowerSectionKey, number>>>
+type LowerSection = Readonly<Partial<Record<LowerSectionKey, number>>>
 
 export type PlayerScores = UpperSection & LowerSection
 

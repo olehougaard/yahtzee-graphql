@@ -85,7 +85,6 @@ export const lower_section_slots = {
   'yahtzee': yahtzee_slot
 } as const
 
-
 export const slots = { ...upper_section_slots, ...lower_section_slots } as const
 
 export type UpperSlotKey = keyof typeof upper_section_slots
