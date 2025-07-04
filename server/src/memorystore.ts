@@ -1,9 +1,12 @@
 import { YahtzeeSpecs } from "models/src/model/yahtzee.game"
-import { GameStore, IndexedGame, PendingGame } from "./servermodel"
+import { GameStore, IndexedGame, PendingGame, StoreError } from "./servermodel"
+import { ServerResponse } from "./response"
+
+const not_found = (key: any): StoreError => ({ type: 'Not Found', key })
 
 export class MemoryStore implements GameStore {
-  public _games: IndexedGame[]
-  public _pending_games: PendingGame[]
+  private _games: IndexedGame[]
+  private _pending_games: PendingGame[]
   private next_id: number = 1
 
   constructor(...games: IndexedGame[]) {
@@ -12,44 +15,44 @@ export class MemoryStore implements GameStore {
   }
   
   games() {
-    return [...this._games]
+    return ServerResponse.ok([...this._games])
   }
   
   game(id: number) {
-    const g = this._games.find(g => g.id === id)
-    if (g === undefined) throw new Error('Not Found')
-      return g
+    return ServerResponse.ok(this._games.find(g => g.id === id))
+      .filter(g => g !== undefined, _ => not_found(id))
+      .map(g => g!)
   }
 
-  add(game: IndexedGame): IndexedGame {
+  add(game: IndexedGame) {
     this._games.push(game)
-    return game
+    return ServerResponse.ok(game)
   }
 
   update(game: IndexedGame) {
     const index = this._games.findIndex(g => g.id === game.id)
     if (index === -1) {
-      throw new Error('Not Found')
+      return ServerResponse.error(not_found(index))
     }
     this._games[index] = game
-    return game
+    return ServerResponse.ok(game)
   }
 
   pending_games() {
-    return [...this._pending_games]
+    return ServerResponse.ok([...this._pending_games])
   }
 
   pending_game(id: number) {
-    const g = this._pending_games.find(g => g.id === id)
-    if (g === undefined) throw new Error('Not Found')
-      return g
+    return ServerResponse.ok(this._pending_games.find(g => g.id === id))
+      .filter(g => g !== undefined, _ => not_found(id))
+      .map(g => g!)
   }
 
-  add_pending({creator, number_of_players, players=[]}: Partial<YahtzeeSpecs>): PendingGame {
+  add_pending({creator, number_of_players, players=[]}: Partial<YahtzeeSpecs>) {
     const id = this.next_id++;
     const pending_game: PendingGame = { creator, number_of_players, id, players, pending: true }
     this._pending_games.push(pending_game)
-    return pending_game
+    return ServerResponse.ok(pending_game)
   }
 
   delete_pending(id: number) {
@@ -62,9 +65,9 @@ export class MemoryStore implements GameStore {
   update_pending(pending: PendingGame) {
     const index = this._pending_games.findIndex(g => g.id === pending.id)
     if (index === -1) {
-      throw new Error('Not Found')
+      return ServerResponse.error(not_found(pending.id))
     }
     this._pending_games[index] = pending
-    return pending
+    return ServerResponse.ok(pending)
   }
 }

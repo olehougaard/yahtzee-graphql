@@ -1,9 +1,10 @@
 import express, { type Express, type Request, type Response } from 'express'
 import bodyParser from 'body-parser'
 import create_api from './api'
-import { IndexedGame, PendingGame } from './servermodel'
+import { IndexedGame, PendingGame, ServerError, StoreError } from './servermodel'
 import { WebSocket } from 'ws'
 import { SlotKey } from 'models/src/model/yahtzee.slots'
+import { ServerResponse } from './response'
 
 interface TypedRequest<BodyType> extends Request {
   body: BodyType
@@ -13,6 +14,20 @@ type RawAction = { type: 'reroll', held: number[] }
                | { type: 'register', slot: SlotKey }
 
 type Action = RawAction & { player: string }
+
+function send<T>(res: Response<T>, response: ServerResponse<T, ServerError>) {
+  response.process(value => res.send(value))
+  response.processError(e => {
+    switch(e.type) {
+      case 'Not Found': 
+        res.sendStatus(404)
+        break
+      case 'Forbidden':
+        res.sendStatus(403)
+        break
+    }
+  })
+}
 
 function start_server(ws: WebSocket) {
   const api = create_api(ws)
@@ -30,62 +45,51 @@ function start_server(ws: WebSocket) {
   gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame|IndexedGame>) => {
     const { creator, number_of_players } = req.body
     const game = api.new_game(creator, number_of_players)
-    res.send(game)
-    api.broadcast(game)
+    send(res, game)
+    game.process(api.broadcast)
   })
 
   gameserver.get('/pending-games', async (_: Request, res: Response<Readonly<PendingGame[]>>) => {
-    const games = api.pending_games()
-    res.send(games)
+    send(res, api.pending_games())
   })
 
   gameserver.get('/pending-games/:id', async (req: Request, res: Response<PendingGame>) => {
     const games = api.pending_games()
-    const g = games.find(g => g.id === parseInt(req.params.id))
-    if (!g)
-      res.status(404).send()
-    else
-      res.send(g)
+      .map(gs => gs.find(g => g.id === parseInt(req.params.id)))
+      .filter(g => g !== undefined, _ => ({ type: 'Not Found', key: req.params.id } as StoreError))
+      .map(g => g!)
+    send(res, games)
   })
 
   gameserver.get('/pending-games/:id/players', async (req: Request, res: Response<string[]>) => {
-    const games = api.pending_games()
-    const g = games.find(g => g.id === parseInt(req.params.id))
-    if (!g)
-      res.status(404).send()
-    else
-      res.send(g.players)
+    const players = api.pending_games()
+      .map(gs => gs.find(g => g.id === parseInt(req.params.id)))
+      .filter(g => g !== undefined, _ => ({ type: 'Not Found', key: req.params.id } as StoreError))
+      .map(g => g!.players)
+    send(res, players)
   })
 
   gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedGame>) => {
     const id = parseInt(req.params.id)
-    try {
-      const g = api.join(id, req.body.player)
-      api.broadcast(g)
-      res.send(g)
-    } catch(e: any) {
-      console.error(e)
-      if (e.message === 'Not Found')
-        res.status(404).send()
-      res.status(403).send()
-    }
+    const g = api.join(id, req.body.player)
+    g.process(api.broadcast)
+    send(res, g)
   })
 
   gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedGame[]>>) => {
     const games = api.games()
-    res.send(games)
+    send(res, games)
   })
 
   gameserver.get('/games/:id', async (req: Request, res: Response<IndexedGame>) => {
     const games = api.games()
-    const g = games.find(g => g.id === parseInt(req.params.id))
-    if (!g)
-      res.status(404).send()
-    else
-      res.send(g)
+      .map(gs => gs.find(g => g.id === parseInt(req.params.id)))
+      .filter(g => g !== undefined, _ => ({ type: 'Not Found', key: req.params.id } as StoreError))
+      .map(g => g!)
+    send(res, games)
   })
 
-  function resolve_action(id: number, action: Action): IndexedGame {
+  function resolve_action(id: number, action: Action) {
     switch (action.type) {
       case 'reroll':
         return api.reroll(id, action.held, action.player)
@@ -96,15 +100,9 @@ function start_server(ws: WebSocket) {
     
   gameserver.post('/games/:id/actions', async (req: TypedRequest<Action>, res: Response) => {
     const id = parseInt(req.params.id)
-    try {
-      const game = resolve_action(id, req.body)
-      res.send(game)
-      api.broadcast(game)
-    } catch (e: any) {
-      if (e.message === 'Not Found')
-        res.status(404).send()
-      res.status(403).send()
-    }
+    const game = resolve_action(id, req.body)
+    send(res, game)
+    game.process(api.broadcast)
   })
     
   gameserver.listen(8080, () => console.log('Gameserver listening on 8080'))

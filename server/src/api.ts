@@ -1,11 +1,11 @@
 import { WebSocket } from "ws";
-import * as Game from "models/src/model/yahtzee.game"
-import { IndexedGame, PendingGame } from "./servermodel";
+import { IndexedGame, PendingGame, ServerError } from "./servermodel";
 import { ServerModel } from "./servermodel"
 import { SlotKey } from "models/src/model/yahtzee.slots"
 import { dice_roller } from "models/src/model/dice";
 import { standardRandomizer } from "models/src/utils/random_utils";
 import { MemoryStore } from "./memorystore";
+import { ServerResponse } from "./response";
 
 export interface Broadcaster {
   send: WebSocket['send']
@@ -60,27 +60,27 @@ const game0: IndexedGame = {
 const server = new ServerModel(new MemoryStore(game0), standardRandomizer)
 
 export default (broadcaster: Broadcaster) => {
-  function new_game(creator: string, number_of_players: number): IndexedGame | PendingGame {
+  function new_game(creator: string, number_of_players: number): ServerResponse<IndexedGame | PendingGame, ServerError> {
     return server.add(creator, number_of_players)
   }
   
-  function reroll(id: number, held: number[], player: string) {
+  function reroll(id: number, held: number[], player: string): ServerResponse<IndexedGame, ServerError> {
     return server.reroll(id, held, player)
   }
   
-  function register(id: number, slot: SlotKey, player: string) {
+  function register(id: number, slot: SlotKey, player: string): ServerResponse<IndexedGame, ServerError> {
     return server.register(id, slot, player)
   }
 
-  function games(): Readonly<IndexedGame[]> {
+  function games(): ServerResponse<IndexedGame[], ServerError> {
     return server.all_games()
   }
 
-  function pending_games(): Readonly<PendingGame[]> {
+  function pending_games(): ServerResponse<PendingGame[], ServerError> {
     return server.all_pending_games()
   }
 
-  function join(id: number, player: string): IndexedGame | PendingGame {
+  function join(id: number, player: string): ServerResponse<IndexedGame | PendingGame, ServerError> {
     return server.join(id, player)
   }
   
