@@ -1,9 +1,9 @@
 import { WebSocket } from "ws";
 import { IndexedGame, PendingGame, ServerError } from "./servermodel";
 import { ServerModel } from "./servermodel"
-import { SlotKey } from "models/src/model/yahtzee.slots"
-import { dice_roller } from "models/src/model/dice";
-import { standardRandomizer } from "models/src/utils/random_utils";
+import { SlotKey } from "domain/src/model/yahtzee.slots"
+import { dice_roller } from "domain/src/model/dice";
+import { standardRandomizer } from "domain/src/utils/random_utils";
 import { MemoryStore } from "./memorystore";
 import { ServerResponse } from "./response";
 

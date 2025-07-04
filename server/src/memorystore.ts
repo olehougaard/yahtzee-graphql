@@ -1,4 +1,4 @@
-import { YahtzeeSpecs } from "models/src/model/yahtzee.game"
+import { YahtzeeSpecs } from "domain/src/model/yahtzee.game"
 import { GameStore, IndexedGame, PendingGame, StoreError } from "./servermodel"
 import { ServerResponse } from "./response"
 

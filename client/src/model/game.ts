@@ -1,4 +1,4 @@
-import * as Y from 'models/src/model/yahtzee.game'
+import * as Y from 'domain/src/model/yahtzee.game'
 
 export type IndexedYahtzee = Readonly<Omit<Y.Yahtzee, 'roller'> & { id: number, pending: false }>
 

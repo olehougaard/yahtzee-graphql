@@ -1,11 +1,11 @@
 <script setup lang="ts">
   import * as api from '../model/api'
-  import { sum, bonus, total_upper, slot_score } from 'models/src/model/yahtzee.score';
-  import { die_values } from 'models/src/model/dice';
-  import { scores as game_scores } from 'models/src/model/yahtzee.game';
+  import { sum, bonus, total_upper, slot_score } from 'domain/src/model/yahtzee.score';
+  import { die_values } from 'domain/src/model/dice';
+  import { scores as game_scores } from 'domain/src/model/yahtzee.game';
   import { computed } from 'vue';
   import type { IndexedYahtzee } from '@/model/game'
-  import { score, slots, type SlotKey, lower_section_keys } from 'models/src/model/yahtzee.slots';
+  import { score, slots, type SlotKey, lower_section_keys } from 'domain/src/model/yahtzee.slots';
 
   const { game, player, enabled } = defineProps<{game: IndexedYahtzee, player: string, enabled: boolean}>()
 

@@ -1,7 +1,7 @@
-import { new_yahtzee, Yahtzee, YahtzeeSpecs } from "models/src/model/yahtzee.game";
-import * as Game from "models/src/model/yahtzee.game";
-import { SlotKey } from "models/src/model/yahtzee.slots";
-import { Randomizer } from "models/src/utils/random_utils";
+import { new_yahtzee, Yahtzee, YahtzeeSpecs } from "domain/src/model/yahtzee.game";
+import * as Game from "domain/src/model/yahtzee.game";
+import { SlotKey } from "domain/src/model/yahtzee.slots";
+import { Randomizer } from "domain/src/utils/random_utils";
 import { ServerResponse } from "./response";
 
 export type IndexedGame = Yahtzee & { readonly id: number, readonly pending: false }

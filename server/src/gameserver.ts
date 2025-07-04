@@ -3,7 +3,7 @@ import bodyParser from 'body-parser'
 import create_api from './api'
 import { IndexedGame, PendingGame, ServerError, StoreError } from './servermodel'
 import { WebSocket } from 'ws'
-import { SlotKey } from 'models/src/model/yahtzee.slots'
+import { SlotKey } from 'domain/src/model/yahtzee.slots'
 import { ServerResponse } from './response'
 
 interface TypedRequest<BodyType> extends Request {

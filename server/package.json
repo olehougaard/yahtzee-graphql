@@ -19,7 +19,7 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "ws": "^8.18.0",
-    "models": "../models"
+    "domain": "../domain"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

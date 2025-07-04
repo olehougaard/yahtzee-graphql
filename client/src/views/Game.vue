@@ -5,7 +5,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { computed, ref, watch } from 'vue';
   import {usePlayerStore} from '@/stores/player_store';
-  import {is_finished, scores} from 'models/src/model/yahtzee.game';
+  import {is_finished, scores} from 'domain/src/model/yahtzee.game';
 
   const ongoingGameStore = useOngoingGamesStore()
   const playerStore = usePlayerStore()

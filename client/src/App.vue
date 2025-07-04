@@ -5,8 +5,7 @@
   import * as api from './model/api'
   import {usePlayerStore} from './stores/player_store';
   import {usePendingGamesStore} from './stores/pending_games_store';
-  import type {IndexedYahtzeeSpecs} from './model/game';
-import {is_finished} from 'models/src/model/yahtzee.game';
+import {is_finished} from 'domain/src/model/yahtzee.game';
   
   const ongoingGamesStore = useOngoingGamesStore()
   const pendingGamesStore = usePendingGamesStore()

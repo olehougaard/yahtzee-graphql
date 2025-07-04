@@ -1,5 +1,5 @@
 import type { IndexedYahtzee, IndexedYahtzeeSpecs } from "./game";
-import type { SlotKey } from "models/src/model/yahtzee.slots";
+import type { SlotKey } from "domain/src/model/yahtzee.slots";
 
 const headers = {Accept: 'application/json', 'Content-Type': 'application/json'}
 
