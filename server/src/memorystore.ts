@@ -48,9 +48,9 @@ export class MemoryStore implements GameStore {
       .map(g => g!)
   }
 
-  add_pending({creator, number_of_players, players=[]}: Partial<YahtzeeSpecs>) {
+  add_pending(game: Omit<PendingGame, 'id'>) {
     const id = this.next_id++;
-    const pending_game: PendingGame = { creator, number_of_players, id, players, pending: true }
+    const pending_game: PendingGame = { ...game, id }
     this._pending_games.push(pending_game)
     return ServerResponse.ok(pending_game)
   }

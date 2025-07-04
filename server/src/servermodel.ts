@@ -1,4 +1,4 @@
-import { new_yahtzee, Yahtzee, YahtzeeSpecs } from "domain/src/model/yahtzee.game";
+import { Yahtzee, YahtzeeSpecs } from "domain/src/model/yahtzee.game";
 import * as Game from "domain/src/model/yahtzee.game";
 import { SlotKey } from "domain/src/model/yahtzee.slots";
 import { Randomizer } from "domain/src/utils/random_utils";
@@ -25,7 +25,7 @@ export interface GameStore {
   
   pending_games(): ServerResponse<PendingGame[], StoreError>
   pending_game(id: number): ServerResponse<PendingGame, StoreError>
-  add_pending(specs: Partial<YahtzeeSpecs>): ServerResponse<PendingGame, StoreError>
+  add_pending(game: Omit<PendingGame, 'id'>): ServerResponse<PendingGame, StoreError>
   delete_pending(id: number): void
   update_pending(pending: PendingGame): ServerResponse<PendingGame, StoreError>
 }
@@ -56,14 +56,14 @@ export class ServerModel {
   }
 
   add(creator: string, number_of_players: number) {
-    return this.store.add_pending({creator, number_of_players})
+    return this.store.add_pending({creator, number_of_players, players: [], pending: true})
       .flatMap(game => this.join(game.id, creator))
   }
 
   private startGameIfReady(pending_game: PendingGame): ServerResponse<IndexedGame | PendingGame, StoreError> {
     const id = pending_game.id
     if (pending_game.players.length === pending_game.number_of_players) {
-      const game = new_yahtzee({players: pending_game.players, randomizer: this.randomizer})
+      const game = Game.new_yahtzee({players: pending_game.players, randomizer: this.randomizer})
       this.store.delete_pending(id)
       return this.store.add({...game, id, pending: false})
     } else {
