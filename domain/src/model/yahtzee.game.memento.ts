@@ -6,14 +6,13 @@ export interface YahtzeeMemento {
   _scores: PlayerScores[],
   _playerInTurn: number,
   _roll: DieValue[],
-  _rolls_left: number,
-  roller: DiceRoller
+  _rolls_left: number
 }
 
-export function scores(yahtzee: Omit<YahtzeeMemento, 'roller'>): number[] {
+export function scores(yahtzee: YahtzeeMemento): number[] {
   return yahtzee._scores.map(total)
 }
 
-export function is_finished(yahtzee: Omit<YahtzeeMemento, 'roller'>): boolean {
+export function is_finished(yahtzee: YahtzeeMemento): boolean {
   return yahtzee._scores.every(is_finished_player)
 }

@@ -1,6 +1,6 @@
 import { repeat } from "../utils/array_utils"
 import { Randomizer, standardRandomizer, standardShuffler } from "../utils/random_utils"
-import { dice_roller, DieValue } from "./dice"
+import { dice_roller, DiceRoller, DieValue } from "./dice"
 import { YahtzeeMemento } from "./yahtzee.game.memento"
 import { register as register_player, is_finished as is_finished_player, registered, total, new_scores, PlayerScores } from "./yahtzee.score"
 import { SlotKey } from "./yahtzee.slots"
@@ -16,6 +16,8 @@ export type YahtzeeOptions = YahtzeeSpecs & {
 }
 
 export interface Yahtzee {
+  readonly roller: DiceRoller
+
   players(): Readonly<String[]>
   scores(): Readonly<PlayerScores[]>
   inTurn(): number
@@ -45,15 +47,13 @@ export function new_yahtzee({players, number_of_players, randomizer = standardRa
     _scores: repeat(new_scores(), players.length),
     _playerInTurn: 0,
     _roll: roller.roll(5),
-    _rolls_left: 2,
-    roller
+    _rolls_left: 2
   }
 
-  return from_memento(memento)
+  return from_memento(memento, dice_roller(randomizer))
 }
 
-export function from_memento(memento: YahtzeeMemento): Yahtzee {
-  const roller = memento.roller
+export function from_memento(memento: YahtzeeMemento, roller: DiceRoller = dice_roller(standardRandomizer)): Yahtzee {
   const players = memento.players
   let scores: PlayerScores[] = memento._scores.map(s => ({...s}))
   let playerInTurn = memento._playerInTurn
@@ -74,12 +74,11 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
       _playerInTurn: playerInTurn,
       _roll: roll,
       _rolls_left: rolls_left,
-      roller
     }
   }
 
   function clone() {
-    return from_memento(to_memento())
+    return from_memento(to_memento(), roller)
   }
 
   function is_finished(): boolean {
@@ -96,6 +95,7 @@ export function from_memento(memento: YahtzeeMemento): Yahtzee {
   }
 
   return {
+    roller,
     players: () => players,
     scores: () => scores,
     inTurn: () => playerInTurn,

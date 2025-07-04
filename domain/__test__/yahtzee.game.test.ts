@@ -3,11 +3,11 @@ import { from_memento, new_yahtzee, Yahtzee } from '../src/model/yahtzee.game'
 import { non_random } from './test_utils'
 import { total } from '../src/model/yahtzee.score'
 import { update } from '../src/utils/array_utils'
+import { YahtzeeMemento } from '../src/model/yahtzee.game.memento'
 import { dice_roller } from '../src/model/dice'
-import { is_finished, scores, YahtzeeMemento } from '../src/model/yahtzee.game.memento'
 
 function force_state(y: Yahtzee, props: Partial<YahtzeeMemento>) {
-  return from_memento({...y.to_memento(), ...props})
+  return from_memento({...y.to_memento(), ...props}, y.roller)
 }
 
 describe("new game", () => {
@@ -195,11 +195,10 @@ const almost_finished: Yahtzee = from_memento({
   ],
   _playerInTurn: 0,
   _roll: [2, 1, 1, 1, 1], // Player 0 roll
-  _rolls_left: 2,
-  roller: dice_roller(non_random(
+  _rolls_left: 2
+}, dice_roller(non_random(
     0, 0, 2, 3, 4, // Player 1 roll
-  ))
-})
+)))
 
 const finished = almost_finished.clone()
 finished.register('yahtzee')
@@ -236,7 +235,7 @@ describe("is_finished", () => {
 describe("serialization", () => {
   describe("new game", () => {
     const new_game = new_yahtzee({players: ['A', 'B']})
-    const transferred_game = from_memento(new_game.to_memento())
+    const transferred_game = from_memento(new_game.to_memento(), new_game.roller)
     it("is still unfinished when transferred", () => {
       expect(transferred_game.is_finished()).toBeFalsy()
     })

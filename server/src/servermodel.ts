@@ -4,6 +4,7 @@ import { SlotKey } from "domain/src/model/yahtzee.slots";
 import { Randomizer } from "domain/src/utils/random_utils";
 import { ServerResponse } from "./response";
 import { YahtzeeMemento } from "domain/src/model/yahtzee.game.memento";
+import { dice_roller } from "domain/src/model/dice";
 
 export type IndexedMemento = YahtzeeMemento & { readonly id: number, readonly pending: false }
 
@@ -12,9 +13,9 @@ export interface IndexedYahtzee extends Game.Yahtzee {
   readonly pending: false
 }
 
-function from_memento(m: IndexedMemento): IndexedYahtzee {
+function from_memento(m: IndexedMemento, randomizer: Randomizer): IndexedYahtzee {
   return {
-    ...Game.from_memento(m),
+    ...Game.from_memento(m, dice_roller(randomizer)),
     id: m.id,
     pending: false
   }
@@ -74,7 +75,7 @@ export class ServerModel {
   }
 
   private load_yahtzee(id: number): ServerResponse<IndexedYahtzee, StoreError> {
-    return this.game(id).map(from_memento)
+    return this.game(id).map(m => from_memento(m, this.randomizer))
   }
 
   pending_game(id: number) {
