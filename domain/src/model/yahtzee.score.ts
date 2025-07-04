@@ -1,5 +1,5 @@
 import { die_values, DieArray } from './dice'
-import { lower_section_slots, upper_section_slots, score, Roll, SlotKey } from './yahtzee.slots'
+import { lower_section_slots, upper_section_slots, Roll, SlotKey } from './yahtzee.slots'
 
 export const slots = { ...lower_section_slots, ...upper_section_slots }
 
@@ -31,7 +31,7 @@ export function new_scores(): PlayerScores {
 }
 
 export function register(scores: PlayerScores, key: SlotKey, roll: Roll): PlayerScores {
-  return { ...scores, [key]: score(slots[key], roll) }
+  return { ...scores, [key]: slots[key].score(roll) }
 }
 
 export function slot_score(scores: PlayerScores, key: SlotKey): number | undefined {

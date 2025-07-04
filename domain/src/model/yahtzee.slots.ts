@@ -69,10 +69,6 @@ export const large_straight_slot: Slot = { type: 'large straight', score: straig
 export const chance_slot: Slot = { type: 'chance', score: roll => roll.reduce((s, d) => s + d, 0) }
 export const yahtzee_slot: Slot = { type: 'yahtzee', score: roll => of_a_kind(5, roll) > 0? 50 : 0 }
 
-export function score(slot: Slot, roll: Roll): number {
-  return slot.score(roll)
-}
-
 const die_value_slots = die_values.map(v => [v, number_slot(v)] as [DieValue, NumberSlot & Scored])
 
 export const upper_section_slots = Object.fromEntries(die_value_slots) as Record<DieValue, NumberSlot & Scored>
