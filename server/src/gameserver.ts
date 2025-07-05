@@ -63,9 +63,9 @@ type RawAction = { type: 'reroll', held: number[] }
 
 type Action = RawAction & { player: string }
 
-function send<T>(res: Response<T>, response: ServerResponse<T, ServerError>) {
-  response.process(value => res.send(value))
-  response.processError(e => {
+async function send<T>(res: Response<T>, response: ServerResponse<T, ServerError>) {
+  response.process(async value => res.send(value))
+  response.processError(async e => {
     switch(e.type) {
       case 'Not Found': 
         res.sendStatus(404)
@@ -77,17 +77,18 @@ function send<T>(res: Response<T>, response: ServerResponse<T, ServerError>) {
   })
 }
 
-function toMemento(game: PendingGame | IndexedYahtzee): PendingGame | IndexedMemento {
+async function toMemento(game: PendingGame | IndexedYahtzee): Promise<IndexedMemento | PendingGame> {
   if (game.pending)
     return game
   else
     return to_memento(game)
-}
+  }
 
 function start_server(ws: WebSocket) {
   const broadcaster = {
-    send(game: PendingGame | IndexedYahtzee) {
-     ws.send(JSON.stringify({type: 'send', message: toMemento(game)}))
+    async send(game: PendingGame | IndexedYahtzee) {
+      const message = await toMemento(game)
+      ws.send(JSON.stringify({type: 'send', message}))
     }
   }
 
@@ -106,37 +107,38 @@ function start_server(ws: WebSocket) {
     
   gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame|IndexedMemento>) => {
     const { creator, number_of_players } = req.body
-    const game = api.new_game(creator, number_of_players)
-    send(res, game.map(toMemento))
+    const game = await api.new_game(creator, number_of_players)
+    send(res, await game.map(toMemento))
   })
 
   gameserver.get('/pending-games', async (_: Request, res: Response<Readonly<PendingGame[]>>) => {
-    send(res, api.pending_games())
+    send(res, await api.pending_games())
   })
 
   gameserver.get('/pending-games/:id', async (req: Request, res: Response<PendingGame>) => {
-    send(res, api.pending_game(parseInt(req.params.id)))
+    send(res, await api.pending_game(parseInt(req.params.id)))
   })
 
   gameserver.get('/pending-games/:id/players', async (req: Request, res: Response<readonly string[]>) => {
-    const players = api.game(parseInt(req.params.id)).map(g => g.players())
-    send(res, players)
+    const game = await api.game(parseInt(req.params.id))
+    const players = game.map(async g => g.players())
+    send(res, await players)
   })
 
   gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedMemento>) => {
     const id = parseInt(req.params.id)
-    const g = api.join(id, req.body.player)
-    send(res, g.map(toMemento))
+    const g = await api.join(id, req.body.player)
+    send(res, await g.map(toMemento))
   })
 
   gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedMemento[]>>) => {
-    const gs = api.games()
-    send(res, gs.map(g => g.map(to_memento)))
+    const gs = await api.games()
+    send(res, await gs.map(async g => g.map(to_memento)))
   })
 
   gameserver.get('/games/:id', async (req: Request, res: Response<IndexedMemento>) => {
-    const g = api.game(parseInt(req.params.id))
-    send(res, g.map(to_memento))
+    const g = await api.game(parseInt(req.params.id))
+    send(res, await g.map(async g => to_memento(g)))
   })
 
   function resolve_action(id: number, action: Action) {
@@ -149,7 +151,7 @@ function start_server(ws: WebSocket) {
   }
     
   gameserver.post('/games/:id/actions', async (req: TypedRequest<Action>, res: Response) => {
-    const game = resolve_action(parseInt(req.params.id), req.body)
+    const game = await resolve_action(parseInt(req.params.id), req.body)
     send(res, game)
   })
     

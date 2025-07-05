@@ -21,16 +21,16 @@ export type ServerError = { type: 'Forbidden' } | StoreError
 const Forbidden: ServerError = { type: 'Forbidden' } as const
 
 export interface GameStore {
-  games(): ServerResponse<IndexedYahtzee[], StoreError>
-  game(id: number): ServerResponse<IndexedYahtzee, StoreError>
-  add(game: IndexedYahtzee):  ServerResponse<IndexedYahtzee, StoreError>
-  update(game: IndexedYahtzee):  ServerResponse<IndexedYahtzee, StoreError>
+  games(): Promise<ServerResponse<IndexedYahtzee[], StoreError>>
+  game(id: number): Promise<ServerResponse<IndexedYahtzee, StoreError>>
+  add(game: IndexedYahtzee):  Promise<ServerResponse<IndexedYahtzee, StoreError>>
+  update(game: IndexedYahtzee):  Promise<ServerResponse<IndexedYahtzee, StoreError>>
   
-  pending_games(): ServerResponse<PendingGame[], StoreError>
-  pending_game(id: number): ServerResponse<PendingGame, StoreError>
-  add_pending(game: Omit<PendingGame, 'id'>): ServerResponse<PendingGame, StoreError>
-  delete_pending(id: number): void
-  update_pending(pending: PendingGame): ServerResponse<PendingGame, StoreError>
+  pending_games(): Promise<ServerResponse<PendingGame[], StoreError>>
+  pending_game(id: number): Promise<ServerResponse<PendingGame, StoreError>>
+  add_pending(game: Omit<PendingGame, 'id'>): Promise<ServerResponse<PendingGame, StoreError>>
+  delete_pending(id: number): Promise<void>
+  update_pending(pending: PendingGame): Promise<ServerResponse<PendingGame, StoreError>>
 }
 
 export class ServerModel {
@@ -58,12 +58,12 @@ export class ServerModel {
     return this.store.pending_game(id)
   }
 
-  add(creator: string, number_of_players: number) {
-    return this.store.add_pending({creator, number_of_players, players: [], pending: true})
-      .flatMap(game => this.join(game.id, creator))
+  async add(creator: string, number_of_players: number) {
+    const g = await this.store.add_pending({ creator, number_of_players, players: [], pending: true });
+    return g.flatMap(game_1 => this.join(game_1.id, creator));
   }
 
-  private startGameIfReady(pending_game: PendingGame): ServerResponse<IndexedYahtzee | PendingGame, StoreError> {
+  private startGameIfReady(pending_game: PendingGame): Promise<ServerResponse<IndexedYahtzee | PendingGame, StoreError>> {
     const id = pending_game.id
     if (pending_game.players.length === pending_game.number_of_players) {
       const game = Game.new_yahtzee({players: pending_game.players, randomizer: this.randomizer})
@@ -74,24 +74,24 @@ export class ServerModel {
     }
   }
 
-  join(id: number, player: string) {
-    const pending_game = this.store.pending_game(id)
-    pending_game.process(game => game.players.push(player))
-    return pending_game.flatMap(this.startGameIfReady.bind(this))
+  async join(id: number, player: string) {
+    const pending_game = await this.store.pending_game(id)
+    pending_game.process(async game => game.players.push(player))
+    return pending_game.flatMap(g => this.startGameIfReady(g))
   }
 
-  reroll(id: number, held: number[], player: string): ServerResponse<IndexedYahtzee, ServerError> {
-    return this.update(id, player, game => game.reroll(held))
+  reroll(id: number, held: number[], player: string): Promise<ServerResponse<IndexedYahtzee, ServerError>> {
+    return this.update(id, player, async game => game.reroll(held))
   }
   
-  register(id: number, slot: SlotKey, player: string): ServerResponse<IndexedYahtzee, ServerError> {
-    return this.update(id, player, game => game.register(slot))
+  register(id: number, slot: SlotKey, player: string): Promise<ServerResponse<IndexedYahtzee, ServerError>> {
+    return this.update(id, player, async game => game.register(slot))
   }
   
-  private update(id: number, player: string, processor: (game: IndexedYahtzee) => void): ServerResponse<IndexedYahtzee, ServerError> {
-    const yahtzee = this.game(id)
-      .filter(game => game && game.playerInTurn() === player, _ => Forbidden)
+  private async update(id: number, player: string, processor: (game: IndexedYahtzee) => Promise<unknown>): Promise<ServerResponse<IndexedYahtzee, ServerError>> {
+    let yahtzee: ServerResponse<IndexedYahtzee, ServerError> = await this.game(id)
+    yahtzee = await yahtzee.filter(async game => game && game.playerInTurn() === player, async _ => Forbidden)
     yahtzee.process(processor)
-    return yahtzee.flatMap(game => this.store.update(game))
+    return yahtzee.flatMap(async game => this.store.update(game));
   }
 }

@@ -14,12 +14,13 @@
     "@babel/preset-typescript": "^7.26.0",
     "babel-jest": "^29.7.0",
     "body-parser": "^1.20.3",
+    "domain": "../domain",
     "express": "^4.21.1",
     "jest": "^29.7.0",
+    "mongodb": "^6.17.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "ws": "^8.18.0",
-    "domain": "../domain"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

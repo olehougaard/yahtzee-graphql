@@ -17,10 +17,10 @@ export class MemoryStore implements GameStore {
     return ServerResponse.ok([...this._games])
   }
   
-  game(id: number) {
-    return ServerResponse.ok(this._games.find(g => g.id === id))
-      .filter(g => g !== undefined, _ => not_found(id))
-      .map(g => g!)
+  async game(id: number) {
+    const found = await ServerResponse.ok(this._games.find(g => g.id === id))
+    const game = await found.filter(async (g) => g !== undefined, async (_) => not_found(id))
+    return game.map(async g => g!)
   }
 
   add(game: IndexedYahtzee) {
@@ -41,10 +41,10 @@ export class MemoryStore implements GameStore {
     return ServerResponse.ok([...this._pending_games])
   }
 
-  pending_game(id: number) {
-    return ServerResponse.ok(this._pending_games.find(g => g.id === id))
-      .filter(g => g !== undefined, _ => not_found(id))
-      .map(g => g!)
+  async pending_game(id: number) {
+    const found = await ServerResponse.ok(this._pending_games.find(g => g.id === id))
+    const game = await found.filter(async (g) => g !== undefined, async (_) => not_found(id))
+    return game.map(async g => g!)
   }
 
   add_pending(game: Omit<PendingGame, 'id'>) {
@@ -54,14 +54,14 @@ export class MemoryStore implements GameStore {
     return ServerResponse.ok(pending_game)
   }
 
-  delete_pending(id: number) {
+  async delete_pending(id: number) {
     const index = this._pending_games.findIndex(g => g.id === id)
     if (index !== -1) {
       this._pending_games.splice(index, 1)
     }
   }
 
-  update_pending(pending: PendingGame) {
+  update_pending(pending: PendingGame): Promise<ServerResponse<PendingGame, StoreError>> {
     const index = this._pending_games.findIndex(g => g.id === pending.id)
     if (index === -1) {
       return ServerResponse.error(not_found(pending.id))
