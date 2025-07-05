@@ -3,30 +3,10 @@ import * as Game from "domain/src/model/yahtzee.game";
 import { SlotKey } from "domain/src/model/yahtzee.slots";
 import { Randomizer } from "domain/src/utils/random_utils";
 import { ServerResponse } from "./response";
-import { YahtzeeMemento } from "domain/src/model/yahtzee.game.memento";
-import { dice_roller } from "domain/src/model/dice";
-
-export type IndexedMemento = YahtzeeMemento & { readonly id: number, readonly pending: false }
 
 export interface IndexedYahtzee extends Game.Yahtzee {
   readonly id: number
   readonly pending: false
-}
-
-function from_memento(m: IndexedMemento, randomizer: Randomizer): IndexedYahtzee {
-  return {
-    ...Game.from_memento(m, dice_roller(randomizer)),
-    id: m.id,
-    pending: false
-  }
-}
-
-function to_memento(y: IndexedYahtzee): IndexedMemento {
-  return {
-    ...y.to_memento(),
-    id: y.id,
-    pending: y.pending
-  }
 }
 
 export type PendingGame = YahtzeeSpecs & {
@@ -41,10 +21,10 @@ export type ServerError = { type: 'Forbidden' } | StoreError
 const Forbidden: ServerError = { type: 'Forbidden' } as const
 
 export interface GameStore {
-  games(): ServerResponse<IndexedMemento[], StoreError>
-  game(id: number): ServerResponse<IndexedMemento, StoreError>
-  add(game: IndexedMemento):  ServerResponse<IndexedMemento, StoreError>
-  update(game: IndexedMemento):  ServerResponse<IndexedMemento, StoreError>
+  games(): ServerResponse<IndexedYahtzee[], StoreError>
+  game(id: number): ServerResponse<IndexedYahtzee, StoreError>
+  add(game: IndexedYahtzee):  ServerResponse<IndexedYahtzee, StoreError>
+  update(game: IndexedYahtzee):  ServerResponse<IndexedYahtzee, StoreError>
   
   pending_games(): ServerResponse<PendingGame[], StoreError>
   pending_game(id: number): ServerResponse<PendingGame, StoreError>
@@ -74,10 +54,6 @@ export class ServerModel {
     return this.store.game(id)
   }
 
-  private load_yahtzee(id: number): ServerResponse<IndexedYahtzee, StoreError> {
-    return this.game(id).map(m => from_memento(m, this.randomizer))
-  }
-
   pending_game(id: number) {
     return this.store.pending_game(id)
   }
@@ -87,12 +63,12 @@ export class ServerModel {
       .flatMap(game => this.join(game.id, creator))
   }
 
-  private startGameIfReady(pending_game: PendingGame): ServerResponse<IndexedMemento | PendingGame, StoreError> {
+  private startGameIfReady(pending_game: PendingGame): ServerResponse<IndexedYahtzee | PendingGame, StoreError> {
     const id = pending_game.id
     if (pending_game.players.length === pending_game.number_of_players) {
       const game = Game.new_yahtzee({players: pending_game.players, randomizer: this.randomizer})
       this.store.delete_pending(id)
-      return this.store.add(to_memento({...game, id, pending: false}))
+      return this.store.add({...game, id, pending: false})
     } else {
       return this.store.update_pending(pending_game)
     }
@@ -104,18 +80,18 @@ export class ServerModel {
     return pending_game.flatMap(this.startGameIfReady.bind(this))
   }
 
-  reroll(id: number, held: number[], player: string): ServerResponse<IndexedMemento, ServerError> {
+  reroll(id: number, held: number[], player: string): ServerResponse<IndexedYahtzee, ServerError> {
     return this.update(id, player, game => game.reroll(held))
   }
   
-  register(id: number, slot: SlotKey, player: string): ServerResponse<IndexedMemento, ServerError> {
+  register(id: number, slot: SlotKey, player: string): ServerResponse<IndexedYahtzee, ServerError> {
     return this.update(id, player, game => game.register(slot))
   }
   
-  private update(id: number, player: string, processor: (game: IndexedYahtzee) => void): ServerResponse<IndexedMemento, ServerError> {
-    const yahtzee = this.load_yahtzee(id)
+  private update(id: number, player: string, processor: (game: IndexedYahtzee) => void): ServerResponse<IndexedYahtzee, ServerError> {
+    const yahtzee = this.game(id)
       .filter(game => game && game.playerInTurn() === player, _ => Forbidden)
     yahtzee.process(processor)
-    return yahtzee.flatMap(game => this.store.update(to_memento(game)))
+    return yahtzee.flatMap(game => this.store.update(game))
   }
 }
