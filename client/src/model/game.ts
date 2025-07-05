@@ -1,7 +1,7 @@
 import { from_memento, type Yahtzee, type YahtzeeSpecs } from "domain/src/model/yahtzee.game"
 import type { YahtzeeMemento } from "domain/src/model/yahtzee.game.memento"
 
-type Indexed<Y, pending extends boolean> = Readonly<Y & {id: number, pending: pending}>
+type Indexed<Y, pending extends boolean> = Readonly<Y & {id: string, pending: pending}>
 
 export type IndexedYahtzee = Indexed<Yahtzee, false>
 

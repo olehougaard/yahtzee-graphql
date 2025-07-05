@@ -1,5 +1,4 @@
 export interface ServerResponse<Value, Error> {
-  resolve<T>(onSuccess: (value: Value) => Promise<T>, onError: (error: Error) => Promise<T>): Promise<T>
   process(onSuccess: (value: Value) => Promise<unknown>): Promise<void>
   processError(onError: (error: Error) => Promise<unknown>): Promise<void>
 
@@ -15,9 +14,6 @@ class OkResponse<Value, Error> implements ServerResponse<Value, Error> {
     this.value = value
   }
 
-  resolve<T>(onSuccess: (value: Value) => T, _onError: (value: Error) => T): T {
-    return onSuccess(this.value)
-  }
   async process(onSuccess: (value: Value) => Promise<void>): Promise<void> {
     onSuccess(this.value)
   }
@@ -47,9 +43,6 @@ class ErrorResponse<Value, Error> implements ServerResponse<Value, Error> {
     this.error = value
   }
 
-  resolve<T>(_onSuccess: (value: Value) => T, onError: (error: Error) => T): T {
-    return onError(this.error)
-  }
   async process(_onSuccess: (value: Value) => void) {
   }
 

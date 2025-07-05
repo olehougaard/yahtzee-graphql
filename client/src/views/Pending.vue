@@ -13,14 +13,14 @@
   const ongoingGamesStore = useOngoingGamesStore()
   const playerStore = usePlayerStore()
 
-  let id = ref(parseInt(route.params.id.toString()))
+  let id = ref(route.params.id.toString())
   const game = computed(() => pendingGamesStore.game(id.value))
   const canJoin = computed(() => 
     game.value && playerStore.player 
     && game.value.players.indexOf(playerStore.player) === -1
   )
 
-  watch(() => route.params.id, (newId) => id.value = parseInt(newId.toString()))
+  watch(() => route.params.id, (newId) => id.value = newId.toString())
   watch(() => pendingGamesStore.game(id.value), g => {
     if (!g) {
       if (ongoingGamesStore.game(id.value))

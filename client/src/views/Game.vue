@@ -11,8 +11,8 @@
   const route = useRoute()
   const router = useRouter()
 
-  let id = ref(parseInt(route.params.id.toString()))
-  watch(() => route.params.id, (newId) => id.value = parseInt(newId.toString()))
+  let id = ref(route.params.id.toString())
+  watch(() => route.params.id, (newId) => id.value = newId.toString())
   const game = computed(() => ongoingGameStore.game(id.value))
   const enabled = computed(() => game.value !== undefined && playerStore.player === game.value.playerInTurn())
   const finished = computed(() => game.value === undefined || game.value.is_finished())

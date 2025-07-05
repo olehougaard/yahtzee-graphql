@@ -5,7 +5,7 @@ import type { IndexedYahtzeeSpecs } from '@/model/game'
 export const usePendingGamesStore = defineStore('pending games', () => {
   const gameList = reactive<IndexedYahtzeeSpecs[]>([])
   const games = computed((): Reactive<Readonly<IndexedYahtzeeSpecs[]>> => gameList)
-  const game = (id: number): IndexedYahtzeeSpecs | undefined => gameList.find(g => g.id === id)
+  const game = (id: string): IndexedYahtzeeSpecs | undefined => gameList.find(g => g.id === id)
   
   const update = (game: IndexedYahtzeeSpecs) => {
     const index = gameList.findIndex(g => g.id === game.id)
@@ -23,7 +23,7 @@ export const usePendingGamesStore = defineStore('pending games', () => {
     }
   }
 
-  const remove = (game: {id: number}) => {
+  const remove = (game: {id: string}) => {
     const index = gameList.findIndex(g => g.id === game.id)
     if (index > -1) {
       gameList.splice(index, 1)

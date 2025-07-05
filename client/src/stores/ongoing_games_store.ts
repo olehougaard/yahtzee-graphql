@@ -5,7 +5,7 @@ import type { IndexedYahtzee } from '@/model/game'
 export const useOngoingGamesStore = defineStore('ongoing games', () => {
   const gameList = reactive<IndexedYahtzee[]>([])
   const games = computed((): Reactive<Readonly<IndexedYahtzee[]>> => gameList)
-  const game = (id: number): IndexedYahtzee | undefined => gameList.find(g => g.id === id)
+  const game = (id: string): IndexedYahtzee | undefined => gameList.find(g => g.id === id)
   const update = (game: IndexedYahtzee) => {
     const index = gameList.findIndex(g => g.id === game.id)
     if (index > -1) {

@@ -24,6 +24,7 @@ You can start the entire application by running the following commands.
 ```
 npm start --workspace=pubsub
 npm start --workspace=server
+npm start --mongodb "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.2.1" -w server
 npm start --workspace=client
 ```
 They block, so you need to run them in three different terminals or start them in the background.
