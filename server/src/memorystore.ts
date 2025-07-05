@@ -3,20 +3,16 @@ import { ServerResponse } from "./response"
 
 const not_found = (key: any): StoreError => ({ type: 'Not Found', key })
 
-export class MemoryStore implements GameStore<string> {
-  private _games: IndexedYahtzee<string>[]
-  private _pending_games: PendingGame<string>[]
+export class MemoryStore implements GameStore {
+  private _games: IndexedYahtzee[]
+  private _pending_games: PendingGame[]
   private next_id: number = 1
 
-  constructor(...games: IndexedYahtzee<string>[]) {
+  constructor(...games: IndexedYahtzee[]) {
     this._games = [...games]
     this._pending_games = []
   }
 
-  to_id(id: string) {
-    return id
-  }
-  
   games() {
     return ServerResponse.ok([...this._games])
   }
@@ -27,12 +23,12 @@ export class MemoryStore implements GameStore<string> {
     return game.map(async g => g!)
   }
 
-  add(game: IndexedYahtzee<string>) {
+  add(game: IndexedYahtzee) {
     this._games.push(game)
     return ServerResponse.ok(game)
   }
 
-  update(game: IndexedYahtzee<string>) {
+  update(game: IndexedYahtzee) {
     const index = this._games.findIndex(g => g.id === game.id)
     if (index === -1) {
       return ServerResponse.error(not_found(index))
@@ -51,9 +47,9 @@ export class MemoryStore implements GameStore<string> {
     return game.map(async g => g!)
   }
 
-  add_pending(game: Omit<PendingGame<string>, 'id'>) {
+  add_pending(game: Omit<PendingGame, 'id'>) {
     const id = this.next_id++;
-    const pending_game: PendingGame<string> = { ...game, id: id.toString() }
+    const pending_game: PendingGame = { ...game, id: id.toString() }
     this._pending_games.push(pending_game)
     return ServerResponse.ok(pending_game)
   }
@@ -66,7 +62,7 @@ export class MemoryStore implements GameStore<string> {
     return ServerResponse.ok(null)
   }
 
-  update_pending(pending: PendingGame<string>): Promise<ServerResponse<PendingGame<string>, StoreError>> {
+  update_pending(pending: PendingGame): Promise<ServerResponse<PendingGame, StoreError>> {
     const index = this._pending_games.findIndex(g => g.id === pending.id)
     if (index === -1) {
       return ServerResponse.error(not_found(pending.id))

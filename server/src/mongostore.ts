@@ -12,16 +12,16 @@ function not_found(key: any): Promise<ServerResponse<never, StoreError>>  {
   return ServerResponse.error({ type: "Not Found", key })
 }
 
-export function MongoStore(connectionString: string, dbName: string, randomizer: Randomizer): GameStore<string> {
-  async function from_mongo(m: WithId<IndexedMemento<string>>): Promise<IndexedYahtzee<string>> {
+export function MongoStore(connectionString: string, dbName: string, randomizer: Randomizer): GameStore {
+  async function from_mongo(m: WithId<IndexedMemento>): Promise<IndexedYahtzee> {
     return { ...from_memento(m, randomizer), id: m._id.toHexString() }
   }
 
-  async function to_mongo(y: IndexedYahtzee<string>): Promise<WithId<IndexedMemento<string>>> {
+  async function to_mongo(y: IndexedYahtzee): Promise<WithId<IndexedMemento>> {
     return { ...to_memento(y), _id: ObjectId.createFromHexString(y.id) }
   }
 
-  const from_mongo_pending = (pg: WithId<Omit<PendingGame<string>, "id">>) => ({ ...pg, id: pg._id.toHexString() })
+  const from_mongo_pending = (pg: WithId<Omit<PendingGame, "id">>) => ({ ...pg, id: pg._id.toHexString() })
 
   async function dbQuery<V>(q: (db: Db) => Promise<V | null>, key?: any): Promise<ServerResponse<V, StoreError>> {
     try {
@@ -51,51 +51,48 @@ export function MongoStore(connectionString: string, dbName: string, randomizer:
     }
   }
 
-  const yahtzee = (db: Db) => db.collection<IndexedMemento<string>>('yahtzee')
-  const pending = (db: Db) => db.collection<Omit<PendingGame<string>, "id">>('yahtzee.pending')
+  const yahtzee = (db: Db) => db.collection<IndexedMemento>('yahtzee')
+  const pending = (db: Db) => db.collection<Omit<PendingGame, "id">>('yahtzee.pending')
 
   return {
-    to_id(id: string) {
-      return id
-    },
-    games(): Promise<ServerResponse<IndexedYahtzee<string>[], StoreError>> {
+    games(): Promise<ServerResponse<IndexedYahtzee[], StoreError>> {
       return dbQuery(async db => {
         const all = await yahtzee(db).find().toArray()
         return await Promise.all(all.map(from_mongo))
       })
     },
-    game(id: string): Promise<ServerResponse<IndexedYahtzee<string>, StoreError>> {
+    game(id: string): Promise<ServerResponse<IndexedYahtzee, StoreError>> {
       return dbQuery(async db => {
         const game = await yahtzee(db).findOne({_id: ObjectId.createFromHexString(id)})
         if (!game) return game
         return from_mongo(game)
       })
     },
-    add(game: IndexedYahtzee<string>): Promise<ServerResponse<IndexedYahtzee<string>, StoreError>> {
+    add(game: IndexedYahtzee): Promise<ServerResponse<IndexedYahtzee, StoreError>> {
       return dbQuery(async db => {
         await yahtzee(db).insertOne(await to_mongo(game), {ignoreUndefined: true})
         return game
       })
     },
-    update(game: IndexedYahtzee<string>): Promise<ServerResponse<IndexedYahtzee<string>, StoreError>> {
+    update(game: IndexedYahtzee): Promise<ServerResponse<IndexedYahtzee, StoreError>> {
       return dbQuery(async db  => {
         const result = await yahtzee(db).replaceOne({ _id: ObjectId.createFromHexString(game.id) }, await to_mongo(game))
         return result.modifiedCount === 0? null: game
       })
     },
-    pending_games(): Promise<ServerResponse<PendingGame<string>[], StoreError>> {
+    pending_games(): Promise<ServerResponse<PendingGame[], StoreError>> {
       return dbQuery(async db => {
         const all = await pending(db).find().toArray()
         return all.map(from_mongo_pending)
       })
     },
-    pending_game(id: string): Promise<ServerResponse<PendingGame<string>, StoreError>> {
+    pending_game(id: string): Promise<ServerResponse<PendingGame, StoreError>> {
       return dbQuery(async db => {
         const game = await pending(db).findOne({_id: ObjectId.createFromHexString(id)})
         return game == null? null : from_mongo_pending(game)
       })
     },
-    add_pending(game: Omit<PendingGame<string>, "id">): Promise<ServerResponse<PendingGame<string>, StoreError>> {
+    add_pending(game: Omit<PendingGame, "id">): Promise<ServerResponse<PendingGame, StoreError>> {
       return dbQuery(async db => {
         const result = await pending(db).insertOne(game, {ignoreUndefined: true})
         return { ...game, id: result.insertedId.toHexString() }
@@ -106,7 +103,7 @@ export function MongoStore(connectionString: string, dbName: string, randomizer:
         await pending(db).deleteOne({_id: ObjectId.createFromHexString(id)})
       })
     },
-    update_pending(game: PendingGame<string>): Promise<ServerResponse<PendingGame<string>, StoreError>> {
+    update_pending(game: PendingGame): Promise<ServerResponse<PendingGame, StoreError>> {
       return dbQuery(async db  => {
         const result = await pending(db).replaceOne({ _id: ObjectId.createFromHexString(game.id) }, game)
         return result.modifiedCount === 0? null: game

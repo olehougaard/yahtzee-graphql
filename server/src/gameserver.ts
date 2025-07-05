@@ -10,7 +10,7 @@ import { MemoryStore } from './memorystore'
 import { standardRandomizer } from 'domain/src/utils/random_utils'
 import { MongoStore } from './mongostore'
 
-const game0: IndexedMemento<string> = {
+const game0: IndexedMemento = {
   id: '0',
   players: ['Alice', 'Bob'],
   playerInTurn: 0,
@@ -82,16 +82,16 @@ async function send<T>(res: Response<T>, response: ServerResponse<T, ServerError
   })
 }
 
-async function toMemento<IdClass>(game: PendingGame<IdClass> | IndexedYahtzee<IdClass>): Promise<IndexedMemento<IdClass> | PendingGame<IdClass>> {
+async function toMemento(game: PendingGame | IndexedYahtzee): Promise<IndexedMemento | PendingGame> {
   if (game.pending)
     return game
   else
     return to_memento(game)
   }
 
-function start_server<IdClass>(ws: WebSocket, store: GameStore<IdClass>) {
+function start_server(ws: WebSocket, store: GameStore) {
   const broadcaster = {
-    async send(game: PendingGame<IdClass> | IndexedYahtzee<IdClass>) {
+    async send(game: PendingGame | IndexedYahtzee) {
       const message = await toMemento(game)
       ws.send(JSON.stringify({type: 'send', message}))
     }
@@ -110,43 +110,43 @@ function start_server<IdClass>(ws: WebSocket, store: GameStore<IdClass>) {
     
   gameserver.use(bodyParser.json())
     
-  gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame<IdClass>|IndexedMemento<IdClass>>) => {
+  gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame|IndexedMemento>) => {
     const { creator, number_of_players } = req.body
     const game = await api.new_game(creator, number_of_players)
     send(res, await game.map(toMemento))
   })
 
-  gameserver.get('/pending-games', async (_: Request, res: Response<Readonly<PendingGame<IdClass>[]>>) => {
+  gameserver.get('/pending-games', async (_: Request, res: Response<Readonly<PendingGame[]>>) => {
     send(res, await api.pending_games())
   })
 
-  gameserver.get('/pending-games/:id', async (req: Request, res: Response<PendingGame<IdClass>>) => {
-    send(res, await api.pending_game(store.to_id(req.params.id)))
+  gameserver.get('/pending-games/:id', async (req: Request, res: Response<PendingGame>) => {
+    send(res, await api.pending_game(req.params.id))
   })
 
   gameserver.get('/pending-games/:id/players', async (req: Request, res: Response<readonly string[]>) => {
-    const game = await api.game(store.to_id(req.params.id))
+    const game = await api.game(req.params.id)
     const players = game.map(async g => g.players())
     send(res, await players)
   })
 
-  gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame<IdClass>|IndexedMemento<IdClass>>) => {
-    const id = store.to_id(req.params.id)
+  gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedMemento>) => {
+    const id = req.params.id
     const g = await api.join(id, req.body.player)
     send(res, await g.map(toMemento))
   })
 
-  gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedMemento<IdClass>[]>>) => {
+  gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedMemento[]>>) => {
     const gs = await api.games()
     send(res, await gs.map(async g => g.map(to_memento)))
   })
 
-  gameserver.get('/games/:id', async (req: Request, res: Response<IndexedMemento<IdClass>>) => {
-    const g = await api.game(store.to_id(req.params.id))
+  gameserver.get('/games/:id', async (req: Request, res: Response<IndexedMemento>) => {
+    const g = await api.game(req.params.id)
     send(res, await g.map(async g => to_memento(g)))
   })
 
-  function resolve_action(id: IdClass, action: Action) {
+  function resolve_action(id: string, action: Action) {
     switch (action.type) {
       case 'reroll':
         return api.reroll(id, action.held, action.player)
@@ -156,7 +156,7 @@ function start_server<IdClass>(ws: WebSocket, store: GameStore<IdClass>) {
   }
     
   gameserver.post('/games/:id/actions', async (req: TypedRequest<Action>, res: Response) => {
-    const game = await resolve_action(store.to_id(req.params.id), req.body)
+    const game = await resolve_action(req.params.id, req.body)
     send(res, game)
   })
     
