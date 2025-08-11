@@ -87,7 +87,7 @@ async function toMemento(game: PendingGame | IndexedYahtzee): Promise<IndexedMem
     return game
   else
     return to_memento(game)
-  }
+}
 
 function start_server(ws: WebSocket, store: GameStore) {
   const broadcaster = {

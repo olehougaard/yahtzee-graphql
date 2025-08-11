@@ -1,0 +1,17 @@
+type Score {
+  slot: String!,
+  score: Int
+}
+
+type Game {
+  id: ID!,
+  players: [String!]!,
+  playerInTurn: Int!,
+  roll: [Int!]!,
+  rolls_left: Int!,
+  scores: [[Score!]!]!
+}
+
+type Query {
+  games: [Game]
+}

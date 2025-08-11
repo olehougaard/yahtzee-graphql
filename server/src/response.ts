@@ -1,6 +1,9 @@
+export type Resolvers<Value, Error, U> = {onSuccess: (value: Value) => Promise<U>, onError: (error: Error) => Promise<U>}
+
 export interface ServerResponse<Value, Error> {
   process(onSuccess: (value: Value) => Promise<unknown>): Promise<void>
   processError(onError: (error: Error) => Promise<unknown>): Promise<void>
+  resolve<U>(resolvers: Resolvers<Value, Error, U>): Promise<U>
 
   map<T>(f: (v: Value) => Promise<T>): Promise<ServerResponse<T, Error>>
   flatMap<T, E>(f: (v: Value) => Promise<ServerResponse<T, E>>): Promise<ServerResponse<T, Error | E>>
@@ -19,6 +22,10 @@ class OkResponse<Value, Error> implements ServerResponse<Value, Error> {
   }
 
   async processError(_onError: (value: Error) => void): Promise<void> {
+  }
+
+  async resolve<U>({onSuccess}: Resolvers<Value, Error, U>): Promise<U> {
+    return onSuccess(this.value)
   }
 
   async map<T>(f: (v: Value) => Promise<T>) {
@@ -48,6 +55,10 @@ class ErrorResponse<Value, Error> implements ServerResponse<Value, Error> {
 
   async processError(onError: (error: Error) => void) {
     onError(this.error)
+  }
+
+  async resolve<U>({onError}: Resolvers<Value, Error, U>): Promise<U> {
+    return onError(this.error)
   }
 
   async map<T>(_: (v: Value) => Promise<T>) {

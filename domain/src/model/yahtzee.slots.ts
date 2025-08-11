@@ -98,3 +98,5 @@ export function isUpperSlotKey(key: SlotKey): key is UpperSlotKey {
 }
 
 export const lower_section_keys = Object.keys(lower_section_slots) as LowerSlotKey[]
+
+export const slot_keys = Object.keys(slots) as SlotKey[]
