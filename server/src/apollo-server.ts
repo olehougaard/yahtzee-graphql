@@ -79,6 +79,7 @@ function toGraphQLGame(game: IndexedYahtzee) {
   const memento = to_memento(game)
   return {
     id: memento.id,
+    pending: false,
     players: memento.players,
     playerInTurn: memento.playerInTurn,
     roll: memento.roll,
@@ -115,6 +116,28 @@ async function startServer(ws: WebSocket, store: GameStore) {
               })
             }
           },
+          Mutation: {
+            new_game: async (_:any, {creator, number_of_players}: {creator: string, number_of_players: number}) => {
+              const res = await api.new_game(creator, number_of_players)
+              return res.resolve({
+                onSuccess: async game => {
+                  if (game.pending)
+                    return game
+                  else
+                    return toGraphQLGame(game)
+                },
+                onError: respond_with_error
+              })
+            }
+          },
+          Game: {
+            __resolveType(obj:any) {
+              if (obj.pending)
+                return 'PendingGame'
+              else
+                return 'ActiveGame'
+            }
+          }
         }
 
         const app = express()

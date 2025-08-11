@@ -44,12 +44,36 @@ export async function join(game: IndexedYahtzeeSpecs, player: string) {
 }
 
 export async function new_game(number_of_players: number, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {
-  const args = { creator: player, number_of_players };
-  const response: IndexedYahtzeeSpecs|IndexedYahtzeeMemento = await post('http://localhost:8080/pending-games', args)
-  if (response.pending)
-    return response
+  const response = await query(`
+    mutation NewGame($creator: String!, $numberOfPlayers: Int!) {
+      new_game(creator: $creator, number_of_players: $numberOfPlayers) {
+      ... on PendingGame {
+        id
+        number_of_players
+        pending
+        creator
+        players
+      }
+      ... on ActiveGame {
+        id
+        pending
+        players
+        playerInTurn
+        roll
+        rolls_left
+        scores {
+          slot
+          score
+        }
+      }    
+    }
+  }`, { creator: player, numberOfPlayers: number_of_players })
+  const game: IndexedYahtzeeSpecs|IndexedYahtzeeMemento = response.new_game
+  console.log(game)
+  if (game.pending)
+    return game
   else
-    return from_memento_indexed(response)
+    return from_memento_indexed(game)
 }
 
 async function perform_action(game: IndexedYahtzee, action: any) {

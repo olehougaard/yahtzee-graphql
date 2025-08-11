@@ -3,8 +3,9 @@ type Score {
   score: Int
 }
 
-type Game {
+type ActiveGame {
   id: ID!,
+  pending: Boolean,
   players: [String!]!,
   playerInTurn: Int!,
   roll: [Int!]!,
@@ -12,6 +13,20 @@ type Game {
   scores: [[Score!]!]!
 }
 
+type PendingGame {
+  id: ID!,
+  pending: Boolean,
+  creator: String!,
+  players: [String!]!,
+  number_of_players: Int!
+}
+
+union Game = ActiveGame | PendingGame
+
 type Query {
-  games: [Game]
+  games: [ActiveGame!]!
+}
+
+type Mutation {
+  new_game(creator: String!, number_of_players: Int!): Game!
 }
