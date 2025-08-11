@@ -17,6 +17,7 @@ import { MemoryStore } from './memorystore';
 import { GraphQLError } from 'graphql';
 import { slot_keys } from 'domain/src/model/yahtzee.slots';
 import { PlayerScoresMemento, slot_score } from 'domain/src/model/yahtzee.score.memento';
+import cors from 'cors';
 
 const game0: IndexedMemento = {
   id: '0',
@@ -70,7 +71,7 @@ async function toMemento(game: PendingGame | IndexedYahtzee): Promise<IndexedMem
     return to_memento(game)
 }
 
-function scores(memento: PlayerScoresMemento) {
+function create_scores(memento: PlayerScoresMemento) {
   return slot_keys.map(k => ({ slot: k.toString(), score: slot_score(memento, k) }))
 }
 
@@ -82,7 +83,7 @@ function toGraphQLGame(game: IndexedYahtzee) {
     playerInTurn: memento.playerInTurn,
     roll: memento.roll,
     rolls_left: memento.rolls_left,
-    scores: memento.scores.map(scores),
+    scores: memento.scores.map(create_scores),
   }
 }
 
@@ -118,10 +119,12 @@ async function startServer(ws: WebSocket, store: GameStore) {
 
         const app = express()
         app.use('/graphql', bodyParser.json())
+
+        app.use(cors())
         app.use('/graphql', (_, res, next) => {
           res.header("Access-Control-Allow-Origin", "*");
-          res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-          res.header("Access-Control-Allow-Methods", "GET, POST, PATCH");
+          res.header("Access-Control-Allow-Headers", "*");
+          res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
           next();
         })
         
@@ -134,9 +137,8 @@ async function startServer(ws: WebSocket, store: GameStore) {
         })
         await server.start()
         app.use('/graphql', expressMiddleware(server))
-        app.use('/frontend', express.static('../static'))
         
-        httpServer.listen({ port: 4000 }, () => console.log(`GraphQL server ready on http://localhost:4000/`))
+        httpServer.listen({ port: 4000 }, () => console.log(`GraphQL server ready on http://localhost:4000/graphql`))
     } catch (err) {
         console.error(`Error: ${err}`)
     }
