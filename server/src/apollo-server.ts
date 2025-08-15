@@ -1,23 +1,26 @@
 import { ApolloServer } from '@apollo/server'
-import { expressMiddleware } from '@as-integrations/express4';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import { expressMiddleware } from '@as-integrations/express4'
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer'
 
 import express from 'express';
 import bodyParser from 'body-parser'
 import http from 'http';
 import {promises as fs} from "fs"
-import { WebSocket } from 'ws'
+import { WebSocket, WebSocketServer } from 'ws'
 
-import { GameStore, IndexedYahtzee, PendingGame, StoreError } from './servermodel';
-import { from_memento, IndexedMemento, to_memento } from './memento';
-import { standardRandomizer } from 'domain/src/utils/random_utils';
+import { GameStore, IndexedYahtzee, PendingGame, StoreError } from './servermodel'
+import { from_memento, IndexedMemento, to_memento } from './memento'
+import { standardRandomizer } from 'domain/src/utils/random_utils'
 import create_api from './api'
-import { MongoStore } from './mongostore';
-import { MemoryStore } from './memorystore';
-import { GraphQLError } from 'graphql';
-import { slot_keys } from 'domain/src/model/yahtzee.slots';
-import { PlayerScoresMemento, slot_score } from 'domain/src/model/yahtzee.score.memento';
-import cors from 'cors';
+import { MongoStore } from './mongostore'
+import { MemoryStore } from './memorystore'
+import { GraphQLError } from 'graphql'
+import { slot_keys } from 'domain/src/model/yahtzee.slots'
+import { PlayerScoresMemento, slot_score } from 'domain/src/model/yahtzee.score.memento'
+import cors from 'cors'
+import { makeExecutableSchema } from '@graphql-tools/schema'
+import { useServer } from 'graphql-ws/use/ws'
+import {PubSub} from 'graphql-subscriptions'
 
 const game0: IndexedMemento = {
   id: '0',
@@ -101,6 +104,7 @@ async function startServer(ws: WebSocket, store: GameStore) {
   }
 
   const randomizer = standardRandomizer
+  const pubsub = new PubSub()
   const api = create_api(broadcaster, store, randomizer)
     try {
         const content = await fs.readFile('./yahtzee.sdl', 'utf8')
@@ -137,9 +141,15 @@ async function startServer(ws: WebSocket, store: GameStore) {
               else
                 return 'ActiveGame'
             }
+          },
+          Subscription: {
+            active: {
+              subscribe: () => pubsub.asyncIterableIterator(['ACTIVE_UPDATED'])
+            }
           }
         }
 
+        
         const app = express()
         app.use('/graphql', bodyParser.json())
 
@@ -153,10 +163,27 @@ async function startServer(ws: WebSocket, store: GameStore) {
         
         const httpServer = http.createServer(app)
 
+        const schema = makeExecutableSchema({typeDefs, resolvers})
+
+        const wsServer = new WebSocketServer({
+          server: httpServer,
+          path: "/subscriptions"
+        })
+
+        const subscriptionServer = useServer({ schema }, wsServer)
+
         const server = new ApolloServer({
-          typeDefs,
-          resolvers,
-          plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+          schema,
+          plugins: [
+            ApolloServerPluginDrainHttpServer({ httpServer }),
+            {
+              async serverWillStart() {
+                return {
+                  drainServer: async () => subscriptionServer.dispose()
+                }
+              }
+            }
+          ],
         })
         await server.start()
         app.use('/graphql', expressMiddleware(server))

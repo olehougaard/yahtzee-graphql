@@ -1,3 +1,4 @@
+import { ApolloClient, gql, InMemoryCache, type DocumentNode } from "@apollo/client/core";
 import { type IndexedYahtzee, type IndexedYahtzeeSpecs, type IndexedYahtzeeMemento, from_memento_indexed, from_graphql_game } from "./game";
 import type { SlotKey } from "domain/src/model/yahtzee.slots";
 
@@ -5,19 +6,29 @@ const uri = 'http://localhost:4000/graphql'
 
 const headers = {Accept: 'application/json', 'Content-Type': 'application/json'}
 
+const apolloClient = new ApolloClient({
+  uri,
+  cache: new InMemoryCache()
+})
+
 async function post(url: string, body: {} = {}): Promise<any> {
   const response: Response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body)})
   if (!response.ok) return Promise.reject(response)
   return await response.json()
 }
 
-async function query(query: string, variables?: Object): Promise<any> {
-  const { data } = await post(uri, { query, variables })    
+async function query(query: DocumentNode, variables?: Object): Promise<any> {
+  const { data } = await apolloClient.query({ query, variables, fetchPolicy: 'network-only' })    
+  return data
+}  
+
+async function mutate(mutation: DocumentNode, variables?: Object): Promise<any> {
+  const { data } = await apolloClient.mutate({ mutation, variables, fetchPolicy: 'network-only' })    
   return data
 }  
 
 export async function games(): Promise<IndexedYahtzee[]> {
-  const memento = await query(`{
+  const memento = await query(gql`{
     games {
       id
       players
@@ -44,7 +55,7 @@ export async function join(game: IndexedYahtzeeSpecs, player: string) {
 }
 
 export async function new_game(number_of_players: number, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {
-  const response = await query(`
+  const response = await mutate(gql`
     mutation NewGame($creator: String!, $numberOfPlayers: Int!) {
       new_game(creator: $creator, number_of_players: $numberOfPlayers) {
       ... on PendingGame {

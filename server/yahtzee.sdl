@@ -30,3 +30,7 @@ type Query {
 type Mutation {
   new_game(creator: String!, number_of_players: Int!): Game!
 }
+
+type Subscription {
+  active: ActiveGame
+}
