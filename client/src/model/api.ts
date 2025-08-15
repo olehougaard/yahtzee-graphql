@@ -1,13 +1,34 @@
-import { ApolloClient, gql, InMemoryCache, type DocumentNode } from "@apollo/client/core";
-import { type IndexedYahtzee, type IndexedYahtzeeSpecs, type IndexedYahtzeeMemento, from_memento_indexed, from_graphql_game } from "./game";
+import { ApolloClient, gql, InMemoryCache, type DocumentNode, split, HttpLink } from "@apollo/client/core";
+import { type IndexedYahtzee, type IndexedYahtzeeSpecs, from_memento_indexed, from_graphql_game } from "./game";
 import type { SlotKey } from "domain/src/model/yahtzee.slots";
-
-const uri = 'http://localhost:4000/graphql'
+import { getMainDefinition } from '@apollo/client/utilities';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { createClient } from 'graphql-ws';
 
 const headers = {Accept: 'application/json', 'Content-Type': 'application/json'}
 
+const wsLink = new GraphQLWsLink(createClient({
+  url: 'ws://localhost:4000/graphql',
+}));
+
+const httpLink = new HttpLink({
+  uri: 'http://localhost:4000/graphql'
+});
+
+const splitLink = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
+    );
+  },
+  wsLink,
+  httpLink,
+);
+
 const apolloClient = new ApolloClient({
-  uri,
+  link: splitLink,
   cache: new InMemoryCache()
 })
 
@@ -27,6 +48,33 @@ async function mutate(mutation: DocumentNode, variables?: Object): Promise<any> 
   return data
 }  
 
+export async function onGame(subscriber: (game: IndexedYahtzee) => any) {
+  const gameSubscriptionQuery = gql`subscription GameSubscription {
+    active {
+      id
+      pending
+      players
+      playerInTurn
+      roll
+      rolls_left
+      scores {
+        slot
+        score
+      }
+    }
+  }`
+  const gameObservable = apolloClient.subscribe({ query: gameSubscriptionQuery })
+  gameObservable.subscribe({
+    next({data}) {
+      const game: IndexedYahtzee = from_graphql_game(data.active)
+      subscriber(game)
+    },
+    error(err) {
+      console.error(err)
+    }
+  })
+}
+
 export async function games(): Promise<IndexedYahtzee[]> {
   const memento = await query(gql`{
     games {
@@ -41,7 +89,6 @@ export async function games(): Promise<IndexedYahtzee[]> {
       }
     }
   }`)
-  console.log(memento.games)
   return memento.games.map(from_graphql_game)
 }
 
@@ -79,12 +126,11 @@ export async function new_game(number_of_players: number, player: string): Promi
       }    
     }
   }`, { creator: player, numberOfPlayers: number_of_players })
-  const game: IndexedYahtzeeSpecs|IndexedYahtzeeMemento = response.new_game
-  console.log(game)
+  const game = response.new_game
   if (game.pending)
-    return game
+    return game as IndexedYahtzeeSpecs
   else
-    return from_memento_indexed(game)
+    return from_graphql_game(game)
 }
 
 async function perform_action(game: IndexedYahtzee, action: any) {

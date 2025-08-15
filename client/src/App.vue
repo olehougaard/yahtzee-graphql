@@ -18,6 +18,10 @@
   const other_pending_games = computed(() => pendingGamesStore.games.filter(g => !isParticipant(g)))
 
   onMounted(async () => {
+    api.onGame(game => {
+        ongoingGamesStore.upsert(game)
+        pendingGamesStore.remove(game)
+    })
     const ws = new WebSocket('ws://localhost:9090/publish')
     ws.onopen = () => ws.send(JSON.stringify({type: 'subscribe'}))
     ws.onmessage = ({data: gameJSON}) => {
@@ -25,9 +29,9 @@
       if (specOrMemento.pending) {
         pendingGamesStore.upsert(specOrMemento)
       } else {
-        const game = from_memento_indexed(specOrMemento)
-        ongoingGamesStore.upsert(game)
-        pendingGamesStore.remove(game)
+        // const game = from_memento_indexed(specOrMemento)
+        // ongoingGamesStore.upsert(game)
+        // pendingGamesStore.remove(game)
       }
     }
     onUnmounted(() => { 
