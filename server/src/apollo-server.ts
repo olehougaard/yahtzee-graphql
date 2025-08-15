@@ -67,13 +67,6 @@ const game0: IndexedMemento = {
   pending: false
 }
 
-async function toMemento(game: PendingGame | IndexedYahtzee): Promise<IndexedMemento | PendingGame> {
-  if (game.pending)
-    return game
-  else
-    return to_memento(game)
-}
-
 function create_scores(memento: PlayerScoresMemento) {
   return slot_keys.map(k => ({ slot: k.toString(), score: slot_score(memento, k) }))
 }
@@ -92,10 +85,14 @@ function toGraphQLGame(game: IndexedYahtzee) {
 }
 
 async function startServer(ws: WebSocket, store: GameStore) {
+  const pubsub: PubSub = new PubSub()
   const broadcaster = {
     async send(game: PendingGame | IndexedYahtzee) {
-      const message = await toMemento(game)
-      ws.send(JSON.stringify({type: 'send', message}))
+      if (game.pending) {
+        pubsub.publish('PENDING_UPDATED', game)
+      } else {
+        pubsub.publish('ACTIVE_UPDATED', {active: toGraphQLGame(game)})
+      }
     }
   }
 
@@ -104,7 +101,6 @@ async function startServer(ws: WebSocket, store: GameStore) {
   }
 
   const randomizer = standardRandomizer
-  const pubsub = new PubSub()
   const api = create_api(broadcaster, store, randomizer)
     try {
         const content = await fs.readFile('./yahtzee.sdl', 'utf8')
@@ -166,8 +162,7 @@ async function startServer(ws: WebSocket, store: GameStore) {
         const schema = makeExecutableSchema({typeDefs, resolvers})
 
         const wsServer = new WebSocketServer({
-          server: httpServer,
-          path: "/subscriptions"
+          server: httpServer
         })
 
         const subscriptionServer = useServer({ schema }, wsServer)
