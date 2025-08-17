@@ -6,7 +6,7 @@ import express from 'express';
 import bodyParser from 'body-parser'
 import http from 'http';
 import {promises as fs} from "fs"
-import { WebSocket, WebSocketServer } from 'ws'
+import { WebSocketServer } from 'ws'
 
 import { GameStore, IndexedYahtzee, PendingGame, StoreError } from './servermodel'
 import { from_memento, IndexedMemento, to_memento } from './memento'
@@ -84,12 +84,12 @@ function toGraphQLGame(game: IndexedYahtzee) {
   }
 }
 
-async function startServer(ws: WebSocket, store: GameStore) {
+async function startServer(store: GameStore) {
   const pubsub: PubSub = new PubSub()
   const broadcaster = {
     async send(game: PendingGame | IndexedYahtzee) {
       if (game.pending) {
-        pubsub.publish('PENDING_UPDATED', game)
+        pubsub.publish('PENDING_UPDATED', {pending: game})
       } else {
         pubsub.publish('ACTIVE_UPDATED', {active: toGraphQLGame(game)})
       }
@@ -141,6 +141,9 @@ async function startServer(ws: WebSocket, store: GameStore) {
           Subscription: {
             active: {
               subscribe: () => pubsub.asyncIterableIterator(['ACTIVE_UPDATED'])
+            },
+            pending: {
+              subscribe: () => pubsub.asyncIterableIterator(['PENDING_UPDATED'])
             }
           }
         }
@@ -189,7 +192,7 @@ async function startServer(ws: WebSocket, store: GameStore) {
     }
 }
 
-function configAndStart(ws: WebSocket) {
+function configAndStart() {
   const mongoIndex = process.argv.indexOf('--mongodb')
   if (mongoIndex !== -1) {
     const connectionString = process.argv[mongoIndex + 1]
@@ -197,10 +200,9 @@ function configAndStart(ws: WebSocket) {
       throw new Error('--mongodb needs connection string')
     const dbNameIndex = process.argv.indexOf('--dbname')
     const dbName = dbNameIndex !== -1? process.argv[dbNameIndex + 1] : 'test'
-    startServer(ws, MongoStore(connectionString, dbName, standardRandomizer))
+    startServer(MongoStore(connectionString, dbName, standardRandomizer))
   } else
-    startServer(ws, new MemoryStore(from_memento(game0, standardRandomizer)))
+    startServer(new MemoryStore(from_memento(game0, standardRandomizer)))
 }
 
-const ws = new WebSocket('ws://localhost:9090/publish')
-ws.onopen = e => configAndStart(e.target)
+configAndStart()

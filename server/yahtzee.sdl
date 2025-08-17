@@ -32,5 +32,6 @@ type Mutation {
 }
 
 type Subscription {
-  active: ActiveGame
+  active: ActiveGame,
+  pending: PendingGame
 }

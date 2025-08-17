@@ -1,11 +1,10 @@
 <script setup lang="ts">
   import { RouterLink, RouterView } from 'vue-router'
-  import { computed, onMounted, onUnmounted } from 'vue'
+  import { computed, onMounted } from 'vue'
   import { useOngoingGamesStore } from './stores/ongoing_games_store';
   import * as api from './model/api'
   import {usePlayerStore} from './stores/player_store';
   import {usePendingGamesStore} from './stores/pending_games_store';
-  import {from_memento_indexed, type IndexedYahtzeeMemento, type IndexedYahtzeeSpecs} from './model/game';
   
   const ongoingGamesStore = useOngoingGamesStore()
   const pendingGamesStore = usePendingGamesStore()
@@ -22,22 +21,7 @@
         ongoingGamesStore.upsert(game)
         pendingGamesStore.remove(game)
     })
-    const ws = new WebSocket('ws://localhost:9090/publish')
-    ws.onopen = () => ws.send(JSON.stringify({type: 'subscribe'}))
-    ws.onmessage = ({data: gameJSON}) => {
-      const specOrMemento: IndexedYahtzeeMemento | IndexedYahtzeeSpecs = JSON.parse(gameJSON)
-      if (specOrMemento.pending) {
-        pendingGamesStore.upsert(specOrMemento)
-      } else {
-        // const game = from_memento_indexed(specOrMemento)
-        // ongoingGamesStore.upsert(game)
-        // pendingGamesStore.remove(game)
-      }
-    }
-    onUnmounted(() => { 
-      ws.send(JSON.stringify({type: 'unsubscribe'}))
-      ws.close()
-    })
+    api.onPending(pendingGamesStore.upsert)
 
     const games = await api.games()
     games.forEach(ongoingGamesStore.upsert)
