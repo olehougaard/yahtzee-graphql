@@ -108,14 +108,14 @@ async function startServer(store: GameStore) {
           ${content}`
         const resolvers = {
           Query: {
-            games: async () => {
+            async games() {
               const res = await api.games()
               return res.resolve({
                 onSuccess: async gs => gs.map(toGraphQLGame),
                 onError: respond_with_error
               })
             },
-            pending_games: async () => {
+            async pending_games() {
               const res = await api.pending_games()
               return res.resolve({
                 onSuccess: async gs => gs,
@@ -124,7 +124,7 @@ async function startServer(store: GameStore) {
             }
           },
           Mutation: {
-            new_game: async (_:any, {creator, number_of_players}: {creator: string, number_of_players: number}) => {
+            async new_game(_:any, {creator, number_of_players}: {creator: string, number_of_players: number}) {
               const res = await api.new_game(creator, number_of_players)
               return res.resolve({
                 onSuccess: async game => {
@@ -136,7 +136,7 @@ async function startServer(store: GameStore) {
                 onError: respond_with_error
               })
             },
-            join: async (_:any, {id, player}: {id: string, player: string}) => {
+            async join(_:any, {id, player}: {id: string, player: string}) {
               const res = await api.join(id, player)
               return res.resolve({
                 onSuccess: async game => {
