@@ -5,8 +5,6 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 
-const headers = {Accept: 'application/json', 'Content-Type': 'application/json'}
-
 const wsLink = new GraphQLWsLink(createClient({
   url: 'ws://localhost:4000/graphql',
 }));
@@ -31,12 +29,6 @@ const apolloClient = new ApolloClient({
   link: splitLink,
   cache: new InMemoryCache()
 })
-
-async function post(url: string, body: {} = {}): Promise<any> {
-  const response: Response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body)})
-  if (!response.ok) return Promise.reject(response)
-  return await response.json()
-}
 
 async function query(query: DocumentNode, variables?: Object): Promise<any> {
   const { data } = await apolloClient.query({ query, variables, fetchPolicy: 'network-only' })    
@@ -189,10 +181,6 @@ export async function join(game: IndexedYahtzeeSpecs, player: string): Promise<I
     return joinedGame as IndexedYahtzeeSpecs
   else
     return from_graphql_game(joinedGame)
-}
-
-async function perform_action(game: IndexedYahtzee, action: any) {
-  return post(`http://localhost:8080/games/${game.id}/actions`, action)
 }
 
 export async function reroll(game: IndexedYahtzee, held: number[], player: string) {

@@ -1,14 +1,26 @@
-import express, { type Express, type Request, type Response } from 'express'
+import { ApolloServer } from '@apollo/server'
+import { expressMiddleware } from '@as-integrations/express4'
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer'
+
+import express from 'express';
 import bodyParser from 'body-parser'
-import create_api from './api'
-import { GameStore, IndexedYahtzee, PendingGame, ServerError } from './servermodel'
-import { WebSocket } from 'ws'
-import { SlotKey } from 'domain/src/model/yahtzee.slots'
-import { ServerResponse } from './response'
+import http from 'http';
+import {promises as fs} from "fs"
+import { WebSocketServer } from 'ws'
+
+import { GameStore, IndexedYahtzee, PendingGame, ServerError, StoreError } from './servermodel'
 import { from_memento, IndexedMemento, to_memento } from './memento'
-import { MemoryStore } from './memorystore'
 import { standardRandomizer } from 'domain/src/utils/random_utils'
+import create_api from './api'
 import { MongoStore } from './mongostore'
+import { MemoryStore } from './memorystore'
+import { GraphQLError } from 'graphql'
+import { slot_keys, SlotKey } from 'domain/src/model/yahtzee.slots'
+import { PlayerScoresMemento, slot_score } from 'domain/src/model/yahtzee.score.memento'
+import cors from 'cors'
+import { makeExecutableSchema } from '@graphql-tools/schema'
+import { useServer } from 'graphql-ws/use/ws'
+import {PubSub} from 'graphql-subscriptions'
 
 const game0: IndexedMemento = {
   id: '0',
@@ -55,115 +67,178 @@ const game0: IndexedMemento = {
   pending: false
 }
 
-interface TypedRequest<BodyType> extends Request {
-  body: BodyType
+function create_scores(memento: PlayerScoresMemento) {
+  return slot_keys.map(k => ({ slot: k.toString(), score: slot_score(memento, k) }))
 }
 
-type RawAction = { type: 'reroll', held: number[] } 
-               | { type: 'register', slot: SlotKey }
+type GraphQlGame = {
+  id: string;
+  pending: boolean;
+  players: readonly string[];
+  playerInTurn: number;
+  roll: readonly (1 | 2 | 3 | 4 | 5 | 6)[];
+  rolls_left: number;
+  scores: {
+    slot: string;
+    score: number | undefined;
+  }[][];
+};
 
-type Action = RawAction & { player: string }
-
-async function send<T>(res: Response<T>, response: ServerResponse<T, ServerError>) {
-  response.process(async value => res.send(value))
-  response.processError(async e => {
-    console.error(e)
-    switch(e.type) {
-      case 'Not Found': 
-        res.sendStatus(404)
-        break
-      case 'Forbidden':
-        res.sendStatus(403)
-        break
-      case 'DB Error':
-        res.status(500).send(e.error)
-        break
-    }
-  })
+function toGraphQLGame(game: IndexedYahtzee): GraphQlGame {
+  const memento = to_memento(game)
+  return {
+    id: memento.id,
+    pending: false,
+    players: memento.players,
+    playerInTurn: memento.playerInTurn,
+    roll: memento.roll,
+    rolls_left: memento.rolls_left,
+    scores: memento.scores.map(create_scores),
+  }
 }
 
-async function toMemento(game: PendingGame | IndexedYahtzee): Promise<IndexedMemento | PendingGame> {
-  if (game.pending)
-    return game
-  else
-    return to_memento(game)
-}
-
-function start_server(ws: WebSocket, store: GameStore) {
+async function startServer(store: GameStore) {
+  const pubsub: PubSub = new PubSub()
   const broadcaster = {
     async send(game: PendingGame | IndexedYahtzee) {
-      const message = await toMemento(game)
-      ws.send(JSON.stringify({type: 'send', message}))
+      if (game.pending) {
+        pubsub.publish('PENDING_UPDATED', {pending: game})
+      } else {
+        pubsub.publish('ACTIVE_UPDATED', {active: toGraphQLGame(game)})
+      }
     }
+  }
+
+  async function respond_with_error(err: ServerError): Promise<never> {
+    throw new GraphQLError(err.type)
   }
 
   const randomizer = standardRandomizer
   const api = create_api(broadcaster, store, randomizer)
-  const gameserver: Express = express()
-    
-  gameserver.use(function(_, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PATCH");
-    next();
-  });
-    
-  gameserver.use(bodyParser.json())
-    
-  gameserver.post('/pending-games', async (req: TypedRequest<{creator: string, number_of_players: number}>, res: Response<PendingGame|IndexedMemento>) => {
-    const { creator, number_of_players } = req.body
-    const game = await api.new_game(creator, number_of_players)
-    send(res, await game.map(toMemento))
-  })
+    try {
+        const content = await fs.readFile('./yahtzee.sdl', 'utf8')
+        const typeDefs = `#graphql
+          ${content}`
+        const resolvers = {
+          Query: {
+            async games() {
+              const res = await api.games()
+              return res.resolve({
+                onSuccess: async gs => gs.map(toGraphQLGame),
+                onError: respond_with_error
+              })
+            },
+            async pending_games() {
+              const res = await api.pending_games()
+              return res.resolve({
+                onSuccess: async gs => gs,
+                onError: respond_with_error
+              })
+            }
+          },
+          Mutation: {
+            async new_game(_:any, params: {creator: string, number_of_players: number}) {
+              const res = await api.new_game(params.creator, params.number_of_players)
+              return res.resolve({
+                onSuccess: async game => {
+                  if (game.pending)
+                    return game
+                  else
+                    return toGraphQLGame(game)
+                },
+                onError: respond_with_error
+              })
+            },
+            async join(_:any, params: {id: string, player: string}) {
+              const res = await api.join(params.id, params.player)
+              return res.resolve({
+                onSuccess: async game => {
+                  if (game.pending)
+                    return game
+                  else
+                    return toGraphQLGame(game)
+                },
+                onError: respond_with_error
+              })
+            },
+            async reroll(_: any, params: {id: string, held: number[], player: string}) {
+              const res = await api.reroll(params.id, params.held, params.player)
+              return res.resolve({
+                onSuccess: async game => toGraphQLGame(game),
+                onError: respond_with_error
+              })
+            },
+            async register(_: any, params: {id: string, slot: SlotKey, player: string}) {
+              const res = await api.register(params.id, params.slot, params.player)
+              return res.resolve({
+                onSuccess: async game => toGraphQLGame(game),
+                onError: respond_with_error
+              })
+            }
+          },
+          Game: {
+            __resolveType(obj:any) {
+              if (obj.pending)
+                return 'PendingGame'
+              else
+                return 'ActiveGame'
+            }
+          },
+          Subscription: {
+            active: {
+              subscribe: () => pubsub.asyncIterableIterator(['ACTIVE_UPDATED'])
+            },
+            pending: {
+              subscribe: () => pubsub.asyncIterableIterator(['PENDING_UPDATED'])
+            }
+          }
+        }
 
-  gameserver.get('/pending-games', async (_: Request, res: Response<Readonly<PendingGame[]>>) => {
-    send(res, await api.pending_games())
-  })
+        
+        const app = express()
+        app.use('/graphql', bodyParser.json())
 
-  gameserver.get('/pending-games/:id', async (req: Request, res: Response<PendingGame>) => {
-    send(res, await api.pending_game(req.params.id))
-  })
+        app.use(cors())
+        app.use('/graphql', (_, res, next) => {
+          res.header("Access-Control-Allow-Origin", "*");
+          res.header("Access-Control-Allow-Headers", "*");
+          res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          next();
+        })
+        
+        const httpServer = http.createServer(app)
 
-  gameserver.get('/pending-games/:id/players', async (req: Request, res: Response<readonly string[]>) => {
-    const game = await api.game(req.params.id)
-    const players = game.map(async g => g.players())
-    send(res, await players)
-  })
+        const schema = makeExecutableSchema({typeDefs, resolvers})
 
-  gameserver.post('/pending-games/:id/players', async (req: TypedRequest<{player: string}>, res: Response<PendingGame|IndexedMemento>) => {
-    const id = req.params.id
-    const g = await api.join(id, req.body.player)
-    send(res, await g.map(toMemento))
-  })
+        const wsServer = new WebSocketServer({
+          server: httpServer
+        })
 
-  gameserver.get('/games', async (_: Request, res: Response<Readonly<IndexedMemento[]>>) => {
-    const gs = await api.games()
-    send(res, await gs.map(async g => g.map(to_memento)))
-  })
+        const subscriptionServer = useServer({ schema }, wsServer)
 
-  gameserver.get('/games/:id', async (req: Request, res: Response<IndexedMemento>) => {
-    const g = await api.game(req.params.id)
-    send(res, await g.map(async g => to_memento(g)))
-  })
-
-  function resolve_action(id: string, action: Action) {
-    switch (action.type) {
-      case 'reroll':
-        return api.reroll(id, action.held, action.player)
-      case 'register':
-        return api.register(id, action.slot, action.player)
+        const server = new ApolloServer({
+          schema,
+          plugins: [
+            ApolloServerPluginDrainHttpServer({ httpServer }),
+            {
+              async serverWillStart() {
+                return {
+                  drainServer: async () => subscriptionServer.dispose()
+                }
+              }
+            }
+          ],
+        })
+        await server.start()
+        app.use('/graphql', expressMiddleware(server))
+        
+        httpServer.listen({ port: 4000 }, () => console.log(`GraphQL server ready on http://localhost:4000/graphql`))
+    } catch (err) {
+        console.error(`Error: ${err}`)
     }
-  }
-    
-  gameserver.post('/games/:id/actions', async (req: TypedRequest<Action>, res: Response) => {
-    const game = await resolve_action(req.params.id, req.body)
-    send(res, game)
-  })
-    
-  gameserver.listen(8080, () => console.log('Gameserver listening on 8080'))
 }
 
-function configAndStart(ws: WebSocket) {
+function configAndStart() {
   const mongoIndex = process.argv.indexOf('--mongodb')
   if (mongoIndex !== -1) {
     const connectionString = process.argv[mongoIndex + 1]
@@ -171,10 +246,9 @@ function configAndStart(ws: WebSocket) {
       throw new Error('--mongodb needs connection string')
     const dbNameIndex = process.argv.indexOf('--dbname')
     const dbName = dbNameIndex !== -1? process.argv[dbNameIndex + 1] : 'test'
-    start_server(ws, MongoStore(connectionString, dbName, standardRandomizer))
+    startServer(MongoStore(connectionString, dbName, standardRandomizer))
   } else
-    start_server(ws, new MemoryStore(from_memento(game0, standardRandomizer)))
+    startServer(new MemoryStore(from_memento(game0, standardRandomizer)))
 }
 
-const ws = new WebSocket('ws://localhost:9090/publish')
-ws.onopen = e => configAndStart(e.target)
+configAndStart()
