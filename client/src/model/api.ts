@@ -127,9 +127,9 @@ export async function pending_games(): Promise<IndexedYahtzeeSpecs[]> {
   return specs.pending_games
 }
 
-export async function join(game: IndexedYahtzeeSpecs, player: string) {
-  return post(`http://localhost:8080/pending-games/${game.id}/players`, {player})
-}
+// export async function join(game: IndexedYahtzeeSpecs, player: string) {
+//   return post(`http://localhost:8080/pending-games/${game.id}/players`, {player})
+// }
 
 export async function new_game(number_of_players: number, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {
   const response = await mutate(gql`
@@ -161,6 +161,38 @@ export async function new_game(number_of_players: number, player: string): Promi
     return game as IndexedYahtzeeSpecs
   else
     return from_graphql_game(game)
+}
+
+export async function join(game: IndexedYahtzeeSpecs, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {
+  const response = await mutate(gql`
+    mutation Join($id: ID!, $player: String!) {
+      join(id: $id, player: $player) {
+      ... on PendingGame {
+        id
+        number_of_players
+        pending
+        creator
+        players
+      }
+      ... on ActiveGame {
+        id
+        pending
+        players
+        playerInTurn
+        roll
+        rolls_left
+        scores {
+          slot
+          score
+        }
+      }    
+    }
+  }`, { id: game.id, player })
+  const joinedGame = response.new_game
+  if (joinedGame.pending)
+    return game as IndexedYahtzeeSpecs
+  else
+    return from_graphql_game(joinedGame)
 }
 
 async function perform_action(game: IndexedYahtzee, action: any) {

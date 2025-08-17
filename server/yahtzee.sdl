@@ -29,7 +29,8 @@ type Query {
 }
 
 type Mutation {
-  new_game(creator: String!, number_of_players: Int!): Game!
+  new_game(creator: String!, number_of_players: Int!): Game!,
+  join(id: ID!, player: String!): Game!
 }
 
 type Subscription {

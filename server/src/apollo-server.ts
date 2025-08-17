@@ -135,6 +135,18 @@ async function startServer(store: GameStore) {
                 },
                 onError: respond_with_error
               })
+            },
+            join: async (_:any, {id, player}: {id: string, player: string}) => {
+              const res = await api.join(id, player)
+              return res.resolve({
+                onSuccess: async game => {
+                  if (game.pending)
+                    return game
+                  else
+                    return toGraphQLGame(game)
+                },
+                onError: respond_with_error
+              })
             }
           },
           Game: {
