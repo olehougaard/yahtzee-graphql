@@ -15,7 +15,7 @@ import create_api from './api'
 import { MongoStore } from './mongostore'
 import { MemoryStore } from './memorystore'
 import { GraphQLError } from 'graphql'
-import { slot_keys } from 'domain/src/model/yahtzee.slots'
+import { slot_keys, SlotKey } from 'domain/src/model/yahtzee.slots'
 import { PlayerScoresMemento, slot_score } from 'domain/src/model/yahtzee.score.memento'
 import cors from 'cors'
 import { makeExecutableSchema } from '@graphql-tools/schema'
@@ -163,6 +163,13 @@ async function startServer(store: GameStore) {
             },
             async reroll(_: any, params: {id: string, held: number[], player: string}) {
               const res = await api.reroll(params.id, params.held, params.player)
+              return res.resolve({
+                onSuccess: async game => toGraphQLGame(game),
+                onError: respond_with_error
+              })
+            },
+            async register(_: any, params: {id: string, slot: SlotKey, player: string}) {
+              const res = await api.register(params.id, params.slot, params.player)
               return res.resolve({
                 onSuccess: async game => toGraphQLGame(game),
                 onError: respond_with_error

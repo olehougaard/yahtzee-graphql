@@ -31,7 +31,8 @@ type Query {
 type Mutation {
   new_game(creator: String!, number_of_players: Int!): Game!,
   join(id: ID!, player: String!): Game!,
-  reroll(id: ID!, held: [Int!]!, player: String!): ActiveGame!
+  reroll(id: ID!, held: [Int!]!, player: String!): ActiveGame!,
+  register(id: ID!, slot: String!, player: String!): ActiveGame!
 }
 
 type Subscription {

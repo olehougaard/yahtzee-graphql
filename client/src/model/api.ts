@@ -211,10 +211,26 @@ export async function reroll(game: IndexedYahtzee, held: number[], player: strin
         }
       }
     }`, { id: game.id, held, player })
-  const joinedGame = response.reroll
-  return from_graphql_game(joinedGame)
+  const updatedGame = response.reroll
+  return from_graphql_game(updatedGame)
 }
 
 export async function register(game: IndexedYahtzee, slot: SlotKey, player: string) {
-  return perform_action(game, { type: 'register', slot, player })
+  const response = await mutate(gql`
+    mutation Register($id: ID!, $slot: String!, $player: String!) {
+      register(id: $id, slot: $slot, player: $player) {
+        id
+        pending
+        players
+        playerInTurn
+        roll
+        rolls_left
+        scores {
+          slot
+          score
+        }
+      }
+    }`, { id: game.id, slot: slot.toString(), player })
+  const updatedGame = response.reroll
+  return from_graphql_game(updatedGame)
 }
