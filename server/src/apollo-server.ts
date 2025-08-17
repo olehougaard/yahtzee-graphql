@@ -8,7 +8,7 @@ import http from 'http';
 import {promises as fs} from "fs"
 import { WebSocketServer } from 'ws'
 
-import { GameStore, IndexedYahtzee, PendingGame, StoreError } from './servermodel'
+import { GameStore, IndexedYahtzee, PendingGame, ServerError, StoreError } from './servermodel'
 import { from_memento, IndexedMemento, to_memento } from './memento'
 import { standardRandomizer } from 'domain/src/utils/random_utils'
 import create_api from './api'
@@ -71,7 +71,20 @@ function create_scores(memento: PlayerScoresMemento) {
   return slot_keys.map(k => ({ slot: k.toString(), score: slot_score(memento, k) }))
 }
 
-function toGraphQLGame(game: IndexedYahtzee) {
+type GraphQlGame = {
+  id: string;
+  pending: boolean;
+  players: readonly string[];
+  playerInTurn: number;
+  roll: readonly (1 | 2 | 3 | 4 | 5 | 6)[];
+  rolls_left: number;
+  scores: {
+    slot: string;
+    score: number | undefined;
+  }[][];
+};
+
+function toGraphQLGame(game: IndexedYahtzee): GraphQlGame {
   const memento = to_memento(game)
   return {
     id: memento.id,
@@ -96,7 +109,7 @@ async function startServer(store: GameStore) {
     }
   }
 
-  async function respond_with_error(err: StoreError): Promise<never> {
+  async function respond_with_error(err: ServerError): Promise<never> {
     throw new GraphQLError(err.type)
   }
 
@@ -124,8 +137,8 @@ async function startServer(store: GameStore) {
             }
           },
           Mutation: {
-            async new_game(_:any, {creator, number_of_players}: {creator: string, number_of_players: number}) {
-              const res = await api.new_game(creator, number_of_players)
+            async new_game(_:any, params: {creator: string, number_of_players: number}) {
+              const res = await api.new_game(params.creator, params.number_of_players)
               return res.resolve({
                 onSuccess: async game => {
                   if (game.pending)
@@ -136,8 +149,8 @@ async function startServer(store: GameStore) {
                 onError: respond_with_error
               })
             },
-            async join(_:any, {id, player}: {id: string, player: string}) {
-              const res = await api.join(id, player)
+            async join(_:any, params: {id: string, player: string}) {
+              const res = await api.join(params.id, params.player)
               return res.resolve({
                 onSuccess: async game => {
                   if (game.pending)
@@ -145,6 +158,13 @@ async function startServer(store: GameStore) {
                   else
                     return toGraphQLGame(game)
                 },
+                onError: respond_with_error
+              })
+            },
+            async reroll(_: any, params: {id: string, held: number[], player: string}) {
+              const res = await api.reroll(params.id, params.held, params.player)
+              return res.resolve({
+                onSuccess: async game => toGraphQLGame(game),
                 onError: respond_with_error
               })
             }

@@ -127,10 +127,6 @@ export async function pending_games(): Promise<IndexedYahtzeeSpecs[]> {
   return specs.pending_games
 }
 
-// export async function join(game: IndexedYahtzeeSpecs, player: string) {
-//   return post(`http://localhost:8080/pending-games/${game.id}/players`, {player})
-// }
-
 export async function new_game(number_of_players: number, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {
   const response = await mutate(gql`
     mutation NewGame($creator: String!, $numberOfPlayers: Int!) {
@@ -188,9 +184,9 @@ export async function join(game: IndexedYahtzeeSpecs, player: string): Promise<I
       }    
     }
   }`, { id: game.id, player })
-  const joinedGame = response.new_game
+  const joinedGame = response.join
   if (joinedGame.pending)
-    return game as IndexedYahtzeeSpecs
+    return joinedGame as IndexedYahtzeeSpecs
   else
     return from_graphql_game(joinedGame)
 }
@@ -200,7 +196,23 @@ async function perform_action(game: IndexedYahtzee, action: any) {
 }
 
 export async function reroll(game: IndexedYahtzee, held: number[], player: string) {
-  return perform_action(game, { type: 'reroll', held, player })
+  const response = await mutate(gql`
+    mutation Reroll($id: ID!, $held: [Int!]!, $player: String!) {
+      reroll(id: $id, held: $held, player: $player) {
+        id
+        pending
+        players
+        playerInTurn
+        roll
+        rolls_left
+        scores {
+          slot
+          score
+        }
+      }
+    }`, { id: game.id, held, player })
+  const joinedGame = response.reroll
+  return from_graphql_game(joinedGame)
 }
 
 export async function register(game: IndexedYahtzee, slot: SlotKey, player: string) {

@@ -30,7 +30,8 @@ type Query {
 
 type Mutation {
   new_game(creator: String!, number_of_players: Int!): Game!,
-  join(id: ID!, player: String!): Game!
+  join(id: ID!, player: String!): Game!,
+  reroll(id: ID!, held: [Int!]!, player: String!): ActiveGame!
 }
 
 type Subscription {
