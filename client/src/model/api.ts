@@ -115,8 +115,16 @@ export async function games(): Promise<IndexedYahtzee[]> {
 }
 
 export async function pending_games(): Promise<IndexedYahtzeeSpecs[]> {
-  const response = await fetch('http://localhost:8080/pending-games', { headers })
-  return await response.json()
+  const specs = await query(gql`{
+    pending_games {
+      id
+      pending
+      creator
+      players
+      number_of_players
+    }
+  }`)
+  return specs.pending_games
 }
 
 export async function join(game: IndexedYahtzeeSpecs, player: string) {

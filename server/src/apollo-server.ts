@@ -114,6 +114,13 @@ async function startServer(store: GameStore) {
                 onSuccess: async gs => gs.map(toGraphQLGame),
                 onError: respond_with_error
               })
+            },
+            pending_games: async () => {
+              const res = await api.pending_games()
+              return res.resolve({
+                onSuccess: async gs => gs,
+                onError: respond_with_error
+              })
             }
           },
           Mutation: {
