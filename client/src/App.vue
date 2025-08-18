@@ -56,7 +56,7 @@
     background-color: rgb(243, 244, 245);
     margin: 10px;
     padding: 0.6rem;
-    height: 95%;
+    overflow: auto;
   }
   html {
     height: 100%;
@@ -66,7 +66,6 @@
     height: 100%;
     margin: 0 auto;
     background-color:rgb(20, 30, 47);
-    overflow:hidden;
   }
   nav {
     margin-left: 5%;
