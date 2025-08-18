@@ -8,19 +8,17 @@ import http from 'http';
 import {promises as fs} from "fs"
 import { WebSocketServer } from 'ws'
 
-import { GameStore, IndexedYahtzee, PendingGame, ServerError, StoreError } from './servermodel'
-import { from_memento, IndexedMemento, to_memento } from './memento'
+import { GameStore, IndexedYahtzee, PendingGame } from './servermodel'
+import { from_memento, IndexedMemento } from './memento'
 import { standardRandomizer } from 'domain/src/utils/random_utils'
-import create_api from './api'
+import { create_api } from './api'
 import { MongoStore } from './mongostore'
 import { MemoryStore } from './memorystore'
-import { GraphQLError } from 'graphql'
-import { slot_keys, SlotKey } from 'domain/src/model/yahtzee.slots'
-import { PlayerScoresMemento, slot_score } from 'domain/src/model/yahtzee.score.memento'
 import cors from 'cors'
 import { makeExecutableSchema } from '@graphql-tools/schema'
 import { useServer } from 'graphql-ws/use/ws'
-import {PubSub} from 'graphql-subscriptions'
+import { PubSub } from 'graphql-subscriptions'
+import { create_resolvers, toGraphQLGame } from './resolvers'
 
 const game0: IndexedMemento = {
   id: '0',
@@ -67,36 +65,6 @@ const game0: IndexedMemento = {
   pending: false
 }
 
-function create_scores(memento: PlayerScoresMemento) {
-  return slot_keys.map(k => ({ slot: k.toString(), score: slot_score(memento, k) }))
-}
-
-type GraphQlGame = {
-  id: string;
-  pending: boolean;
-  players: readonly string[];
-  playerInTurn: number;
-  roll: readonly (1 | 2 | 3 | 4 | 5 | 6)[];
-  rolls_left: number;
-  scores: {
-    slot: string;
-    score: number | undefined;
-  }[][];
-};
-
-function toGraphQLGame(game: IndexedYahtzee): GraphQlGame {
-  const memento = to_memento(game)
-  return {
-    id: memento.id,
-    pending: false,
-    players: memento.players,
-    playerInTurn: memento.playerInTurn,
-    roll: memento.roll,
-    rolls_left: memento.rolls_left,
-    scores: memento.scores.map(create_scores),
-  }
-}
-
 async function startServer(store: GameStore) {
   const pubsub: PubSub = new PubSub()
   const broadcaster = {
@@ -108,134 +76,55 @@ async function startServer(store: GameStore) {
       }
     }
   }
+  const api = create_api(broadcaster, store, standardRandomizer)
 
-  async function respond_with_error(err: ServerError): Promise<never> {
-    throw new GraphQLError(err.type)
-  }
+  try {
+      const content = await fs.readFile('./yahtzee.sdl', 'utf8')
+      const typeDefs = `#graphql
+        ${content}`
+      const resolvers = create_resolvers(pubsub, api)
+      
+      const app = express()
+      app.use('/graphql', bodyParser.json())
 
-  const randomizer = standardRandomizer
-  const api = create_api(broadcaster, store, randomizer)
-    try {
-        const content = await fs.readFile('./yahtzee.sdl', 'utf8')
-        const typeDefs = `#graphql
-          ${content}`
-        const resolvers = {
-          Query: {
-            async games() {
-              const res = await api.games()
-              return res.resolve({
-                onSuccess: async gs => gs.map(toGraphQLGame),
-                onError: respond_with_error
-              })
-            },
-            async pending_games() {
-              const res = await api.pending_games()
-              return res.resolve({
-                onSuccess: async gs => gs,
-                onError: respond_with_error
-              })
-            }
-          },
-          Mutation: {
-            async new_game(_:any, params: {creator: string, number_of_players: number}) {
-              const res = await api.new_game(params.creator, params.number_of_players)
-              return res.resolve({
-                onSuccess: async game => {
-                  if (game.pending)
-                    return game
-                  else
-                    return toGraphQLGame(game)
-                },
-                onError: respond_with_error
-              })
-            },
-            async join(_:any, params: {id: string, player: string}) {
-              const res = await api.join(params.id, params.player)
-              return res.resolve({
-                onSuccess: async game => {
-                  if (game.pending)
-                    return game
-                  else
-                    return toGraphQLGame(game)
-                },
-                onError: respond_with_error
-              })
-            },
-            async reroll(_: any, params: {id: string, held: number[], player: string}) {
-              const res = await api.reroll(params.id, params.held, params.player)
-              return res.resolve({
-                onSuccess: async game => toGraphQLGame(game),
-                onError: respond_with_error
-              })
-            },
-            async register(_: any, params: {id: string, slot: SlotKey, player: string}) {
-              const res = await api.register(params.id, params.slot, params.player)
-              return res.resolve({
-                onSuccess: async game => toGraphQLGame(game),
-                onError: respond_with_error
-              })
-            }
-          },
-          Game: {
-            __resolveType(obj:any) {
-              if (obj.pending)
-                return 'PendingGame'
-              else
-                return 'ActiveGame'
-            }
-          },
-          Subscription: {
-            active: {
-              subscribe: () => pubsub.asyncIterableIterator(['ACTIVE_UPDATED'])
-            },
-            pending: {
-              subscribe: () => pubsub.asyncIterableIterator(['PENDING_UPDATED'])
-            }
-          }
-        }
+      app.use(cors())
+      app.use('/graphql', (_, res, next) => {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "*");
+        res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        next();
+      })
+      
+      const httpServer = http.createServer(app)
 
-        
-        const app = express()
-        app.use('/graphql', bodyParser.json())
+      const schema = makeExecutableSchema({typeDefs, resolvers})
 
-        app.use(cors())
-        app.use('/graphql', (_, res, next) => {
-          res.header("Access-Control-Allow-Origin", "*");
-          res.header("Access-Control-Allow-Headers", "*");
-          res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-          next();
-        })
-        
-        const httpServer = http.createServer(app)
+      const wsServer = new WebSocketServer({
+        server: httpServer
+      })
 
-        const schema = makeExecutableSchema({typeDefs, resolvers})
+      const subscriptionServer = useServer({ schema }, wsServer)
 
-        const wsServer = new WebSocketServer({
-          server: httpServer
-        })
-
-        const subscriptionServer = useServer({ schema }, wsServer)
-
-        const server = new ApolloServer({
-          schema,
-          plugins: [
-            ApolloServerPluginDrainHttpServer({ httpServer }),
-            {
-              async serverWillStart() {
-                return {
-                  drainServer: async () => subscriptionServer.dispose()
-                }
+      const server = new ApolloServer({
+        schema,
+        plugins: [
+          ApolloServerPluginDrainHttpServer({ httpServer }),
+          {
+            async serverWillStart() {
+              return {
+                drainServer: async () => subscriptionServer.dispose()
               }
             }
-          ],
-        })
-        await server.start()
-        app.use('/graphql', expressMiddleware(server))
-        
-        httpServer.listen({ port: 4000 }, () => console.log(`GraphQL server ready on http://localhost:4000/graphql`))
-    } catch (err) {
-        console.error(`Error: ${err}`)
-    }
+          }
+        ],
+      })
+      await server.start()
+      app.use('/graphql', expressMiddleware(server))
+      
+      httpServer.listen({ port: 4000 }, () => console.log(`GraphQL server ready on http://localhost:4000/graphql`))
+  } catch (err) {
+      console.error(`Error: ${err}`)
+  }
 }
 
 function configAndStart() {

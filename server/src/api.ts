@@ -1,4 +1,5 @@
-import { GameStore, IndexedYahtzee, PendingGame } from "./servermodel";
+import { ServerResponse } from "./response";
+import { GameStore, IndexedYahtzee, PendingGame, ServerError } from "./servermodel";
 import { ServerModel } from "./servermodel"
 import { SlotKey } from "domain/src/model/yahtzee.slots"
 import { Randomizer } from "domain/src/utils/random_utils";
@@ -7,7 +8,18 @@ export interface Broadcaster {
   send: (message: IndexedYahtzee | PendingGame) => Promise<void>
 }
 
-export default (broadcaster: Broadcaster, store: GameStore, randomizer: Randomizer) => {
+export type API = {
+  new_game: (creator: string, number_of_players: number) => Promise<ServerResponse<IndexedYahtzee | PendingGame, ServerError>>;
+  pending_games: () => Promise<ServerResponse<PendingGame[], ServerError>>;
+  pending_game: (id: string) => Promise<ServerResponse<PendingGame, ServerError>>;
+  join: (id: string, player: string) => Promise<ServerResponse<IndexedYahtzee | PendingGame, ServerError>>;
+  games: () => Promise<ServerResponse<IndexedYahtzee[], ServerError>>;
+  game: (id: string) => Promise<ServerResponse<IndexedYahtzee, ServerError>>;
+  reroll: (id: string, held: number[], player: string) => Promise<ServerResponse<IndexedYahtzee, ServerError>>;
+  register: (id: string, slot: SlotKey, player: string) => Promise<ServerResponse<IndexedYahtzee, ServerError>>;
+}
+
+export const create_api = (broadcaster: Broadcaster, store: GameStore, randomizer: Randomizer): API => {
   const server = new ServerModel(store, randomizer)
 
   async function new_game(creator: string, number_of_players: number) {
