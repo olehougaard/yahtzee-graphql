@@ -9,25 +9,32 @@
   const ongoingGamesStore = useOngoingGamesStore()
   const pendingGamesStore = usePendingGamesStore()
   const playerStore = usePlayerStore()
-
+  
   const isParticipant = (g: {players: readonly string[]}) => g.players.indexOf(playerStore.player ?? '') > -1
-
+  
   const my_ongoing_games = computed(() => ongoingGamesStore.games.filter(g => isParticipant(g.to_memento()) && !g.is_finished()))
   const my_pending_games = computed(() => pendingGamesStore.games.filter(isParticipant))
   const other_pending_games = computed(() => pendingGamesStore.games.filter(g => !isParticipant(g)))
-
-  onMounted(async () => {
+  
+  async function initGames() {
+    const games = await api.games();
+    games.forEach(ongoingGamesStore.upsert);
+    
+    const pending_games = await api.pending_games();
+    pending_games.forEach(pendingGamesStore.upsert);
+  }
+  
+  function liveUpdateGames() {
     api.onGame(game => {
-        ongoingGamesStore.upsert(game)
-        pendingGamesStore.remove(game)
-    })
-    api.onPending(pendingGamesStore.upsert)
-
-    const games = await api.games()
-    games.forEach(ongoingGamesStore.upsert)
-
-    const pending_games = await api.pending_games()
-    pending_games.forEach(pendingGamesStore.upsert)
+      ongoingGamesStore.upsert(game);
+      pendingGamesStore.remove(game);
+    });
+    api.onPending(pendingGamesStore.upsert);
+  }
+  
+  onMounted(async () => {
+    await initGames();
+    liveUpdateGames();
   })
 </script>
 
