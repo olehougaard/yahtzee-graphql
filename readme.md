@@ -15,19 +15,24 @@ npm install
 ```
 
 ### Start the application
-The application has three workspaces
-1. pubsub - responsible for sending updates to the client.
-2. server - responsible for getting game updates from the client. Uses pubsub to broadcast updates.
-3. client - responsible for letting the user play a game.
+The application has two workspaces
+1. server - responsible for getting game updates from the client. Uses pubsub to broadcast updates.
+2. client - responsible for letting the user play a game.
 
-You can start the entire application by running the following commands.
+You can start the application either as an in memory application or using a MongoDB database.
+
+Starting the application in memory:  Run the following commands.
 ```
-npm start --workspace=pubsub
-npm start --workspace=server
+npm start -w server
+npm start -w client
+```
+
+Starting the application with a MongoDB database: Run the following commands.
+```
 npm start --mongodb "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.2.1" -w server
-npm start --workspace=client
+npm start -w client
 ```
-They block, so you need to run them in three different terminals or start them in the background.
+The commands block, so you need to run them in two different terminals or start them in the background.
 
 You can access the client on http://localhost:5173/
 
