@@ -5,6 +5,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import * as api from '../model/api'
   import {useOngoingGamesStore} from '@/stores/ongoing_games_store';
+  import Page from '@/components/Page.vue';
 
   const route = useRoute()
   const router = useRouter()
@@ -47,9 +48,11 @@
 </script>
 
 <template>
-  <h1>Game #{{id}}</h1>
-  <div>Created by: {{game?.creator}}</div>
-  <div>Players: {{game?.players.join(', ')}}</div>
-  <div>Available Seats: {{ (game?.number_of_players??2) - (game?.players.length??0)}}</div>
-  <button v-if="canJoin" @click="join">Join</button>
+  <Page>
+    <h1>Game #{{id}}</h1>
+    <div>Created by: {{game?.creator}}</div>
+    <div>Players: {{game?.players.join(', ')}}</div>
+    <div>Available Seats: {{ (game?.number_of_players??2) - (game?.players.length??0)}}</div>
+    <button v-if="canJoin" @click="join">Join</button>
+  </Page>
 </template>

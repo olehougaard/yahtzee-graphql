@@ -5,6 +5,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { computed, ref, watch } from 'vue';
   import {usePlayerStore} from '@/stores/player_store';
+import Page from '@/components/Page.vue';
 
   const ongoingGameStore = useOngoingGamesStore()
   const playerStore = usePlayerStore()
@@ -32,21 +33,23 @@
 </script>
 
 <template>
-  <div v-if="game && playerStore.player" class="game">
-    <div class="meta">
-      <h1>Game #{{id}} </h1>
+  <Page v-if="game && playerStore.player">
+    <div class="game">
+      <div class="meta">
+        <h1>Game #{{id}} </h1>
+      </div>
+      <ScoreCard class="card" :game="game" :player="playerStore.player" :enabled="enabled"/>
+      <DiceRoll v-if="!finished" class ="roll" :game="game" :player="playerStore.player" :enabled="enabled"/>
+      <div v-if="finished" class="scoreboard">
+        <table>
+          <thead><tr><td>Player</td><td>Score</td></tr></thead>
+          <tbody>
+            <tr v-for="row in standings" :class="row[0] == playerStore.player? 'current' : undefined"><td>{{row[0]}}</td><td>{{row[1]}}</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-    <ScoreCard class="card" :game="game" :player="playerStore.player" :enabled="enabled"/>
-    <DiceRoll v-if="!finished" class ="roll" :game="game" :player="playerStore.player" :enabled="enabled"/>
-    <div v-if="finished" class="scoreboard">
-      <table>
-        <thead><tr><td>Player</td><td>Score</td></tr></thead>
-        <tbody>
-          <tr v-for="row in standings" :class="row[0] == playerStore.player? 'current' : undefined"><td>{{row[0]}}</td><td>{{row[1]}}</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  </Page>
 </template>
 
 <style>

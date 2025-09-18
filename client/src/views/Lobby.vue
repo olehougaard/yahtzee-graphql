@@ -3,6 +3,7 @@
   import { ref } from 'vue';
   import {useRouter} from 'vue-router';
   import {usePlayerStore} from '@/stores/player_store';
+  import Page from '@/components/Page.vue';
 
   const playerStore = usePlayerStore()
 
@@ -20,9 +21,10 @@
 </script>
 
 <template>
-  <h1>Yahtzee!</h1>
-  <main v-if="playerStore.player">
-    Number of players: <input min="1" type="number" v-model="number_of_players"/>
-    <button @click="new_game(playerStore.player)">New Game</button>
-  </main>
+  <Page v-if="playerStore.player">
+    <main>
+      Number of players: <input min="1" type="number" v-model="number_of_players"/>
+      <button @click="new_game(playerStore.player)">New Game</button>
+    </main>
+  </Page>
 </template>

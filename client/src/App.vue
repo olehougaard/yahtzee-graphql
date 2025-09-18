@@ -40,20 +40,6 @@
 
 <template>
   <h1 class="header">Yahtzee!</h1>
-  <h2 v-if="playerStore.player" class="subheader">Welcome player {{playerStore.player}}</h2>
-  <nav v-if="playerStore.player">
-    <RouterLink class='link' to="/">Lobby</RouterLink>
-    
-    <h2>My Games</h2>
-    <h3>Ongoing</h3>
-    <RouterLink class='link' v-for="game in my_ongoing_games" :to="`/game/${game.id}`">Game #{{game.id}}</RouterLink>
-    
-    <h3>Waiting for players</h3>
-    <RouterLink class='link' v-for="game in my_pending_games" :to="`/pending/${game.id}`">Game #{{game.id}}</RouterLink>
-    
-    <h2>Available Games</h2>
-    <RouterLink class='link' v-for="game in other_pending_games" :to="`/pending/${game.id}`">Game #{{game.id}}</RouterLink>
-  </nav>
   
   <RouterView class='main'/>
 </template>
