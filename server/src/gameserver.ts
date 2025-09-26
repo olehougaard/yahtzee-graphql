@@ -88,7 +88,7 @@ async function startServer(store: GameStore) {
       app.use('/graphql', bodyParser.json())
 
       app.use(cors({
-        origin: /localhost:/,
+        origin: /:\/\/localhost:/,
         methods: ['GET', 'POST, OPTIONS']
       }))
       
