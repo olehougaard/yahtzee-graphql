@@ -106,17 +106,49 @@ export async function games(): Promise<IndexedYahtzee[]> {
   return memento.games.map(from_graphql_game)
 }
 
+export async function game(id: string): Promise<IndexedYahtzee | undefined> {
+  const response = await query(gql`
+    query Game($id: String!) {
+      game(id: $id) {
+        id
+        players
+        playerInTurn
+        roll
+        rolls_left
+        scores {
+          score
+          slot
+        }
+      }
+    }`, {id})
+  if (response.game === undefined)
+    return undefined
+  return from_graphql_game(response.game)
+}
+
 export async function pending_games(): Promise<IndexedYahtzeeSpecs[]> {
-  const specs = await query(gql`{
+  const response = await query(gql`{
     pending_games {
       id
-      pending
-      creator
       players
-      number_of_players
     }
   }`)
-  return specs.pending_games
+  const games: Pick<IndexedYahtzeeSpecs, 'id' | 'players'>[] = await response.pending_games;
+  return games.map(g => ({...g, pending: true}))
+}
+
+export async function pending_game(id: string): Promise<IndexedYahtzeeSpecs | undefined> {
+  const response = await query(gql`
+    query PendingGame($id: String!) {
+      pending_game(id: $id) {
+        id
+        number_of_players
+        pending
+        creator
+        players
+      }
+    }`, {id})
+    return await response.pending_games
 }
 
 export async function new_game(number_of_players: number, player: string): Promise<IndexedYahtzeeSpecs|IndexedYahtzee> {

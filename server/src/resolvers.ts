@@ -48,11 +48,27 @@ async function games(api: API): Promise<GraphQlGame[]> {
   })
 }
 
+async function game(api: API, id: string): Promise<GraphQlGame | undefined> {
+  const res = await api.game(id)
+  return res.resolve({
+    onSuccess: async g => toGraphQLGame(g),
+    onError: async e => undefined
+  })
+}
+
 async function pending_games(api: API): Promise<PendingGame[]> {
   const res = await api.pending_games()
   return res.resolve({
     onSuccess: async gs => gs,
     onError: respond_with_error
+  })
+}
+
+async function pending_game(api: API, id: string): Promise<PendingGame | undefined> {
+  const res = await api.pending_game(id)
+  return res.resolve({
+    onSuccess: async g => g,
+    onError: async e => undefined
   })
 }
 
@@ -89,8 +105,14 @@ export const create_resolvers = (pubsub: PubSub, api: API) => {
       async games() {
         return games(api)
       },
+      async game(id: string) {
+        return game(api, id)
+      },
       async pending_games() {
         return pending_games(api)
+      },
+      async pending_game(id: string) {
+        return pending_game(api, id)
       }
     },
     Mutation: {

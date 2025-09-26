@@ -25,7 +25,9 @@ union Game = ActiveGame | PendingGame
 
 type Query {
   games: [ActiveGame!]!,
+  game(id: ID!): ActiveGame,
   pending_games: [PendingGame!]!
+  pending_game(id: ID!): PendingGame
 }
 
 type Mutation {

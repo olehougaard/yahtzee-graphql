@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import {usePendingGamesStore} from '@/stores/pending_games_store';
   import {usePlayerStore} from '@/stores/player_store';
-  import {computed, ref, watch} from 'vue';
+  import {computed, onBeforeMount, ref, watch} from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import * as api from '../model/api'
   import {useOngoingGamesStore} from '@/stores/ongoing_games_store';
@@ -15,7 +15,18 @@
   const playerStore = usePlayerStore()
 
   let id = ref(route.params.id.toString())
+
+  onBeforeMount(async () => {
+    let game = pendingGamesStore.game(id.value)
+    if (!game) return game
+    if (!game.creator || !game.number_of_players) {
+      game = await api.pending_game(game?.id)
+      if (game) pendingGamesStore.update(game)
+    }
+  })
+
   const game = computed(() => pendingGamesStore.game(id.value))
+  
   const canJoin = computed(() => 
     game.value && playerStore.player 
     && game.value.players.indexOf(playerStore.player) === -1
