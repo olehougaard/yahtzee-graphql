@@ -41,7 +41,7 @@
 <template>
   <h1 class="header">Yahtzee!</h1>
   
-  <RouterView class='main'/>
+  <RouterView/>
 </template>
 
 <style>
