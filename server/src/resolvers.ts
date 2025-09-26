@@ -105,8 +105,8 @@ export const create_resolvers = (pubsub: PubSub, api: API) => {
       async games() {
         return games(api)
       },
-      async game(id: string) {
-        return game(api, id)
+      async game(_:any, params: {id: string}) {
+        return game(api, params.id)
       },
       async pending_games() {
         return pending_games(api)
@@ -118,24 +118,24 @@ export const create_resolvers = (pubsub: PubSub, api: API) => {
     Mutation: {
       async new_game(_:any, params: {creator: string, number_of_players: number}) {
         return new_game(api, params)
-    },
-    async join(_:any, params: {id: string, player: string}) {
-        return join(api, params)
-    },
-    async reroll(_: any, params: {id: string, held: number[], player: string}) {
-      const res = await api.reroll(params.id, params.held, params.player)
-      return res.resolve({
-        onSuccess: async game => toGraphQLGame(game),
-        onError: respond_with_error
-      })
-    },
-    async register(_: any, params: {id: string, slot: SlotKey, player: string}) {
-      const res = await api.register(params.id, params.slot, params.player)
-      return res.resolve({
-        onSuccess: async game => toGraphQLGame(game),
-        onError: respond_with_error
-      })
-    }
+      },
+      async join(_:any, params: {id: string, player: string}) {
+          return join(api, params)
+      },
+      async reroll(_: any, params: {id: string, held: number[], player: string}) {
+        const res = await api.reroll(params.id, params.held, params.player)
+        return res.resolve({
+          onSuccess: async game => toGraphQLGame(game),
+          onError: respond_with_error
+        })
+      },
+      async register(_: any, params: {id: string, slot: SlotKey, player: string}) {
+        const res = await api.register(params.id, params.slot, params.player)
+        return res.resolve({
+          onSuccess: async game => toGraphQLGame(game),
+          onError: respond_with_error
+        })
+      }
     },
     Game: {
       __resolveType(obj:any) {

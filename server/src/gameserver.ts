@@ -87,13 +87,10 @@ async function startServer(store: GameStore) {
       const app = express()
       app.use('/graphql', bodyParser.json())
 
-      app.use(cors())
-      app.use('/graphql', (_, res, next) => {
-        res.header("Access-Control-Allow-Origin", "*");
-        res.header("Access-Control-Allow-Headers", "*");
-        res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        next();
-      })
+      app.use(cors({
+        origin: /localhost:/,
+        methods: ['GET', 'POST, OPTIONS']
+      }))
       
       const httpServer = http.createServer(app)
 
