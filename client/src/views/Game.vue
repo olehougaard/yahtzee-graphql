@@ -5,7 +5,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { computed, ref, watch } from 'vue';
   import {usePlayerStore} from '@/stores/player_store';
-import Page from '@/components/Page.vue';
+  import Page from '@/components/Page.vue';
 
   const ongoingGameStore = useOngoingGamesStore()
   const playerStore = usePlayerStore()
@@ -18,7 +18,7 @@ import Page from '@/components/Page.vue';
   const enabled = computed(() => game.value !== undefined && playerStore.player === game.value.playerInTurn())
   const finished = computed(() => game.value === undefined || game.value.is_finished())
   const standings = computed(() => {
-    if (game.value === undefined) return []
+    if (game.value === undefined) return [] 
     const g = game.value
     const standings: [string, number][] = g.scores().map((s, i) => [g.players()[i], s.total()])
     standings.sort(([_, score1], [__, score2]) => score2 - score1)
