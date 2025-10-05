@@ -7,23 +7,23 @@ import { createClient } from 'graphql-ws';
 
 const wsLink = new GraphQLWsLink(createClient({
   url: 'ws://localhost:4000/graphql',
-}));
+}))
 
 const httpLink = new HttpLink({
   uri: 'http://localhost:4000/graphql'
-});
+})
 
 const splitLink = split(
   ({ query }) => {
-    const definition = getMainDefinition(query);
+    const definition = getMainDefinition(query)
     return (
       definition.kind === 'OperationDefinition' &&
       definition.operation === 'subscription'
-    );
+    )
   },
   wsLink,
   httpLink,
-);
+)
 
 const apolloClient = new ApolloClient({
   link: splitLink,
