@@ -89,7 +89,7 @@ async function startServer(store: GameStore) {
 
       app.use(cors({
         origin: /:\/\/localhost:/,
-        methods: ['GET', 'POST, OPTIONS']
+        methods: ['GET', 'POST', 'OPTIONS']
       }))
       
       const httpServer = http.createServer(app)

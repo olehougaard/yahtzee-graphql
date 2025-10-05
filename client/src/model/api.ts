@@ -31,13 +31,13 @@ const apolloClient = new ApolloClient({
 })
 
 async function query(query: DocumentNode, variables?: Object): Promise<any> {
-  const { data } = await apolloClient.query({ query, variables, fetchPolicy: 'network-only' })    
-  return data
+  const result = await apolloClient.query({ query, variables, fetchPolicy: 'network-only' })    
+  return result.data
 }  
 
 async function mutate(mutation: DocumentNode, variables?: Object): Promise<any> {
-  const { data } = await apolloClient.mutate({ mutation, variables, fetchPolicy: 'network-only' })    
-  return data
+  const result = await apolloClient.mutate({ mutation, variables, fetchPolicy: 'network-only' })    
+  return result.data
 }  
 
 export async function onGame(subscriber: (game: IndexedYahtzee) => any) {
